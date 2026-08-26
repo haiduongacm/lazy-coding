@@ -1,0 +1,12 @@
+pyproject.toml
+src/lazy_pool/__init__.py
+src/lazy_pool/cli.py
+src/lazy_pool/pool.py
+src/lazy_pool/state.py
+src/lazy_pool/worktree.py
+src/lazy_pool.egg-info/PKG-INFO
+src/lazy_pool.egg-info/SOURCES.txt
+src/lazy_pool.egg-info/dependency_links.txt
+src/lazy_pool.egg-info/entry_points.txt
+src/lazy_pool.egg-info/requires.txt
+src/lazy_pool.egg-info/top_level.txt

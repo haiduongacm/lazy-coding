@@ -1,0 +1,2 @@
+[console_scripts]
+lazy-core = lazy_core.cli:main

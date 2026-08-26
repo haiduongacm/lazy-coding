@@ -1,0 +1,2 @@
+[console_scripts]
+lazy-master = lazy_master.cli:main

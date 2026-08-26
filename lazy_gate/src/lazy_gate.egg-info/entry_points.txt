@@ -1,0 +1,2 @@
+[console_scripts]
+lazy-gate = lazy_gate.cli:main

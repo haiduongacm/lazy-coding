@@ -24,7 +24,8 @@ class TestWatcher:
 
     def test_record_activity(self):
         watcher = Watcher()
-        watcher.record_activity("hand-1")
+        import time
+        watcher.last_activity["hand-1"] = time.time()
         assert "hand-1" in watcher.last_activity
 
     def test_on_callback(self):

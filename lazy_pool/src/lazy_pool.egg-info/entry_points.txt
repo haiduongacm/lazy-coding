@@ -1,0 +1,2 @@
+[console_scripts]
+lazy-pool = lazy_pool.cli:main

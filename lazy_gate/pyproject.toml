@@ -1,6 +1,6 @@
 [build-system]
-requires = ["setuptools>=61.0"]
-build-backend = "setuptools.backends._legacy:_Backend"
+requires = ["setuptools>=61.0", "wheel"]
+build-backend = "setuptools.build_meta"
 
 [project]
 name = "lazy-gate"
@@ -17,3 +17,4 @@ lazy-gate = "lazy_gate.cli:main"
 
 [tool.setuptools.packages.find]
 where = ["src"]
+

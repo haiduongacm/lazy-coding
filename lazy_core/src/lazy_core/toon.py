@@ -94,8 +94,9 @@ def decode(toon_str):
 
     toon_str = toon_str.strip()
 
-    # Try to parse as list
-    if toon_str.startswith("[") and "[]:" in toon_str:
+    # Try to parse as list (e.g. "[3]:" or "[5]:")
+    import re
+    if re.match(r'^\[\d+\]:', toon_str):
         return decode_list(toon_str)
 
     # Try to parse as dict

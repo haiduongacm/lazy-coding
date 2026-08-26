@@ -1,0 +1,14 @@
+pyproject.toml
+src/lazy_core/__init__.py
+src/lazy_core/aggregate.py
+src/lazy_core/cli.py
+src/lazy_core/empty.py
+src/lazy_core/error.py
+src/lazy_core/principles.py
+src/lazy_core/toon.py
+src/lazy_core/truncate.py
+src/lazy_core.egg-info/PKG-INFO
+src/lazy_core.egg-info/SOURCES.txt
+src/lazy_core.egg-info/dependency_links.txt
+src/lazy_core.egg-info/entry_points.txt
+src/lazy_core.egg-info/top_level.txt

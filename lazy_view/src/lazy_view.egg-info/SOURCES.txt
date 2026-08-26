@@ -1,0 +1,9 @@
+pyproject.toml
+src/lazy_view/__init__.py
+src/lazy_view/cli.py
+src/lazy_view/viewer.py
+src/lazy_view.egg-info/PKG-INFO
+src/lazy_view.egg-info/SOURCES.txt
+src/lazy_view.egg-info/dependency_links.txt
+src/lazy_view.egg-info/entry_points.txt
+src/lazy_view.egg-info/top_level.txt

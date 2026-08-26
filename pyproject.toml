@@ -1,6 +1,6 @@
 [build-system]
-requires = ["setuptools>=61.0"]
-build-backend = "setuptools.backends._legacy:_Backend"
+requires = ["setuptools>=61.0", "wheel"]
+build-backend = "setuptools.build_meta"
 
 [project]
 name = "lazy-coding"
@@ -23,6 +23,13 @@ members = [
     "lazy_view",
 ]
 
+[tool.uv.sources]
+lazy-core = { workspace = true }
+lazy-pool = { workspace = true }
+lazy-gate = { workspace = true }
+lazy-master = { workspace = true }
+lazy-view = { workspace = true }
+
 [tool.pytest.ini_options]
 testpaths = ["tests"]
 asyncio_mode = "auto"
@@ -33,3 +40,4 @@ target-version = "py310"
 
 [tool.ruff.lint]
 select = ["E", "F", "I"]
+

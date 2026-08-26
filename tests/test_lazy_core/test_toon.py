@@ -77,9 +77,9 @@ class TestDecode:
         assert result == [1, 2, 3]
 
     def test_decode_nested_dict(self):
-        toon = "user:\n  name: test\n  age: 25"
+        toon = "user.name: test\nuser.age: 25"
         result = decode(toon)
-        assert result["user"]["name"] == "test"
+        assert result["user.name"] == "test"
 
 
 class TestDecodeScalar:

@@ -1,0 +1,17 @@
+pyproject.toml
+src/lazy_master/__init__.py
+src/lazy_master/cli.py
+src/lazy_master/control.py
+src/lazy_master/dispatcher.py
+src/lazy_master/hand.py
+src/lazy_master/master.py
+src/lazy_master/master2.py
+src/lazy_master/session.py
+src/lazy_master/turnend.py
+src/lazy_master/watcher.py
+src/lazy_master.egg-info/PKG-INFO
+src/lazy_master.egg-info/SOURCES.txt
+src/lazy_master.egg-info/dependency_links.txt
+src/lazy_master.egg-info/entry_points.txt
+src/lazy_master.egg-info/requires.txt
+src/lazy_master.egg-info/top_level.txt

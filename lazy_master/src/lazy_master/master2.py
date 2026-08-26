@@ -1,7 +1,7 @@
 """lazy-master2 - Secondmate / persistent agent."""
 
 from dataclasses import dataclass, field
-from typing import Optional, List
+from typing import Optional, List, Any
 from datetime import datetime
 from pathlib import Path
 import json
