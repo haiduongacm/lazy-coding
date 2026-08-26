@@ -4,11 +4,13 @@ AI Coding Agentic Platform - Zero-install, token-efficient, agent-native
 
 ## Features
 
-- **lazy-core**: TOON format encoder/decoder, AXI principles
-- **lazy-pool**: Git worktree pool manager
-- **lazy-gate**: Git gate + pipeline validation
-- **lazy-master**: Multi-agent orchestrator with tmux backend
-- **lazy-view**: HTML artifact review tool
+| Package | Description |
+|---------|-------------|
+| **lazy-core** | TOON format encoder/decoder, AXI principles |
+| **lazy-pool** | Git worktree pool manager |
+| **lazy-gate** | Git gate + pipeline validation |
+| **lazy-master** | Multi-agent orchestrator with tmux backend |
+| **lazy-view** | HTML artifact review tool |
 
 ## Installation
 
@@ -20,16 +22,16 @@ uv pip install -e lazy_core -e lazy_pool -e lazy_gate -e lazy_master -e lazy_vie
 pip install -e lazy_core -e lazy_pool -e lazy_gate -e lazy_master -e lazy_view
 ```
 
-## Usage
+## Quick Start
 
 ```bash
 # Pool management
-lazy-pool get
-lazy-pool return
-lazy-pool status
+lazy-pool get              # Get a worktree
+lazy-pool return           # Return a worktree
+lazy-pool status           # Show pool status
 
 # Gate validation
-lazy-gate push
+lazy-gate push             # Push through gate
 
 # Multi-agent orchestration
 lazy-master dispatch "fix bug"
@@ -41,6 +43,8 @@ lazy-view open index.html
 ```
 
 ## TOON Format
+
+TOON (Token-Optimized Object Notation) uses ~40% fewer tokens than JSON.
 
 ```bash
 # Encode JSON to TOON
@@ -54,11 +58,74 @@ items[3]:
   3" | lazy-core decode
 ```
 
+## Architecture
+
+```
+┌─────────────────────────────────────────────────────────┐
+│                    lazy-master                           │
+├─────────────────────────────────────────────────────────┤
+│  dispatch() → lazy-hand → tmux backend → agent          │
+│       │              ↑                                   │
+│  watcher() ─────────┘  (monitor fleet)                  │
+│  control() ──────────── (interrupt/exit/relaunch)       │
+│  guard() ────────────── (health check)                  │
+│  snapshot() ─────────── (full status)                   │
+│  lazy-master2() ─────── (persistent agent)              │
+└─────────────────────────────────────────────────────────┘
+```
+
+## Commands
+
+```bash
+# Dispatch
+lazy-master dispatch "fix login bug"
+lazy-master dispatch --backend tmux --agent opencode "fix bug"
+
+# Status
+lazy-master status
+lazy-master liveness
+lazy-master busy
+lazy-master snapshot
+
+# Control
+lazy-master control <handId> interrupt
+lazy-master control <handId> exit
+lazy-master control <handId> relaunch
+
+# Guard
+lazy-master guard
+
+# Secondmate
+lazy-master secondmate add --name backend-team --agent claude
+lazy-master secondmate list
+
+# Backlog
+lazy-master backlog add "Fix login bug"
+lazy-master backlog list
+lazy-master backlog ready
+
+# Project modes
+lazy-master project set my-api no-mistakes
+lazy-master project set my-scripts local-only --yolo
+
+# Operational memory
+lazy-master stow "Login uses JWT tokens"
+lazy-master memory
+
+# Fleet sync
+lazy-master sync
+lazy-master sync --project ~/projects/api
+lazy-master sync history
+```
+
 ## Development
 
 ```bash
 # Run tests
 pytest
+
+# Run with coverage
+pytest --cov=lazy_core --cov=lazy_pool --cov=lazy_gate --cov=lazy_master
 
 # Lint
 ruff check .

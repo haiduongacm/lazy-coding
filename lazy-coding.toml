@@ -1,0 +1,30 @@
+# lazy-coding configuration
+# Place in project root or ~/.lazy-coding/config.toml
+
+[core]
+version = "1.1.0"
+
+[pool]
+max_trees = 16
+root = "~/.lazy-coding/pools"
+
+[gate]
+pipeline = ["review", "test", "lint", "docs", "typecheck"]
+auto_fix = true
+open_pr = true
+
+[master]
+max_hands = 4
+backend = "tmux"
+agent = "claude"
+agent_args = []
+max_lines = 200
+liveness_interval = 10000
+
+[tmux]
+session = "lazy-coding"
+
+[view]
+port = 4387
+auto_open = true
+diagnostic_viewports = ["mobile", "compact", "desktop"]
