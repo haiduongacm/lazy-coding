@@ -1,0 +1,18 @@
+[build-system]
+requires = ["setuptools>=61.0"]
+build-backend = "setuptools.backends._legacy:_Backend"
+
+[project]
+name = "lazy-view"
+version = "1.0.0"
+description = "HTML artifact review tool"
+readme = "README.md"
+license = "MIT"
+requires-python = ">=3.10"
+authors = [{ name = "lazy-coding" }]
+
+[project.scripts]
+lazy-view = "lazy_view.cli:main"
+
+[tool.setuptools.packages.find]
+where = ["src"]

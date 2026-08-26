@@ -1,0 +1,19 @@
+[build-system]
+requires = ["setuptools>=61.0"]
+build-backend = "setuptools.backends._legacy:_Backend"
+
+[project]
+name = "lazy-pool"
+version = "1.0.0"
+description = "Git worktree pool manager"
+readme = "README.md"
+license = "MIT"
+requires-python = ">=3.10"
+authors = [{ name = "lazy-coding" }]
+dependencies = ["lazy-core"]
+
+[project.scripts]
+lazy-pool = "lazy_pool.cli:main"
+
+[tool.setuptools.packages.find]
+where = ["src"]

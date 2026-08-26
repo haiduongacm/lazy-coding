@@ -1,0 +1,20 @@
+[project]
+name = "lazy-coding"
+version = "1.0.0"
+description = "AI Coding Agentic Platform - Zero-install, token-efficient, agent-native"
+readme = "README.md"
+license = "MIT"
+requires-python = ">=3.10"
+authors = [{ name = "lazy-coding" }]
+
+[project.scripts]
+lazy-coding = "lazy_master.cli:main"
+
+[tool.uv.workspace]
+members = [
+    "lazy_core",
+    "lazy_pool",
+    "lazy_gate",
+    "lazy_master",
+    "lazy_view",
+]

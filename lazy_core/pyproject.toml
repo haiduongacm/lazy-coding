@@ -1,0 +1,18 @@
+[build-system]
+requires = ["setuptools>=61.0"]
+build-backend = "setuptools.backends._legacy:_Backend"
+
+[project]
+name = "lazy-core"
+version = "1.0.0"
+description = "TOON format encoder/decoder and shared utilities"
+readme = "README.md"
+license = "MIT"
+requires-python = ">=3.10"
+authors = [{ name = "lazy-coding" }]
+
+[project.scripts]
+lazy-core = "lazy_core.cli:main"
+
+[tool.setuptools.packages.find]
+where = ["src"]
