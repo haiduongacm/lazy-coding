@@ -1,0 +1,61 @@
+version = 1
+revision = 3
+requires-python = ">=3.10"
+
+[manifest]
+members = [
+    "lazy-coding",
+    "lazy-core",
+    "lazy-gate",
+    "lazy-master",
+    "lazy-pool",
+    "lazy-view",
+]
+
+[[package]]
+name = "lazy-coding"
+version = "1.0.0"
+source = { editable = "." }
+
+[[package]]
+name = "lazy-core"
+version = "1.0.0"
+source = { editable = "lazy_core" }
+
+[[package]]
+name = "lazy-gate"
+version = "1.0.0"
+source = { editable = "lazy_gate" }
+dependencies = [
+    { name = "lazy-core" },
+]
+
+[package.metadata]
+requires-dist = [{ name = "lazy-core", editable = "lazy_core" }]
+
+[[package]]
+name = "lazy-master"
+version = "1.0.0"
+source = { editable = "lazy_master" }
+dependencies = [
+    { name = "lazy-core" },
+]
+
+[package.metadata]
+requires-dist = [{ name = "lazy-core", editable = "lazy_core" }]
+
+[[package]]
+name = "lazy-pool"
+version = "1.0.0"
+source = { editable = "lazy_pool" }
+dependencies = [
+    { name = "lazy-core" },
+]
+
+[package.metadata]
+requires-dist = [{ name = "lazy-core", editable = "lazy_core" }]
+
+[[package]]
+name = "lazy-view"
+version = "1.0.0"
+source = { editable = "lazy_view" }

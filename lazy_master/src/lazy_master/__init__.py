@@ -10,7 +10,7 @@ from .watcher import Watcher
 from .control import ControlPlane
 from .turnend import TurnEndGuard
 from .dispatcher import parse_request, detect_task_type, detect_priority
-from .session import create_session, list_sessions, load_session
+from .session import SessionManager
 from .backlog import Backlog
 from .project_mode import ProjectMode
 from .fleet_snapshot import FleetSnapshot
@@ -20,6 +20,5 @@ __all__ = [
     "LazyMaster", "LazyHand", "LazyMaster2",
     "Watcher", "ControlPlane", "TurnEndGuard",
     "parse_request", "detect_task_type", "detect_priority",
-    "create_session", "list_sessions", "load_session",
-    "Backlog", "ProjectMode", "FleetSnapshot", "Guard",
+    "SessionManager", "Backlog", "ProjectMode", "FleetSnapshot", "Guard",
 ]

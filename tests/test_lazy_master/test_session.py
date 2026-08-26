@@ -1,22 +1,45 @@
 """Tests for lazy-master session."""
 
 import pytest
-from lazy_master.session import create_session, list_sessions, load_session
+import tempfile
+from pathlib import Path
+from lazy_master.session import SessionManager
 
 
 class TestSession:
-    def test_create_session(self):
-        session = create_session()
-        assert "id" in session
-        assert session["status"] == "active"
-        assert "created" in session
+    def test_acquire_lock(self):
+        with tempfile.TemporaryDirectory() as tmpdir:
+            manager = SessionManager(state_dir=tmpdir)
+            result = manager.acquire_lock()
+            assert result["success"]
+            assert "session_id" in result
 
-    def test_list_sessions(self):
-        sessions = list_sessions()
-        assert isinstance(sessions, list)
+    def test_release_lock(self):
+        with tempfile.TemporaryDirectory() as tmpdir:
+            manager = SessionManager(state_dir=tmpdir)
+            manager.acquire_lock()
+            manager.release_lock()
+            assert not manager.lock_file.exists()
 
-    def test_create_and_load(self):
-        session = create_session()
-        loaded = load_session(session["id"])
-        assert loaded is not None
-        assert loaded["id"] == session["id"]
+    def test_bootstrap(self):
+        with tempfile.TemporaryDirectory() as tmpdir:
+            manager = SessionManager(state_dir=tmpdir)
+            result = manager.bootstrap()
+            assert result["success"]
+
+    def test_generate_digest(self):
+        with tempfile.TemporaryDirectory() as tmpdir:
+            manager = SessionManager(state_dir=tmpdir)
+            manager.acquire_lock()
+            result = manager.generate_digest()
+            assert result["success"]
+
+    def test_status(self):
+        with tempfile.TemporaryDirectory() as tmpdir:
+            manager = SessionManager(state_dir=tmpdir)
+            status = manager.status()
+            assert status["active"] is False
+
+            manager.acquire_lock()
+            status = manager.status()
+            assert status["active"]
