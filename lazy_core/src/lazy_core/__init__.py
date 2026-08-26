@@ -1,21 +1,27 @@
-"""lazy-core - TOON format encoder/decoder and shared utilities."""
+"""lazy-core - TOON format encoder/decoder and shared utilities.
 
-from .toon import encode, decode
+Mirrors the axi-sdk-js output.ts and errors.ts logic.
+"""
+
+from .toon import encode, decode, encode_dict, encode_list, decode_dict, decode_list, decode_scalar
+from .errors import AxiError, exit_code_for_error
+from .output import (
+    render_output,
+    render_error,
+    error_output,
+    merge_output,
+    home_header_output,
+    collapse_home_directory,
+)
 from .principles import PRINCIPLES
 from .truncate import truncate
 from .aggregate import aggregate
-from .error import error_response, success_response
 from .empty import empty_response
 
-__version__ = "1.0.0"
-
 __all__ = [
-    "encode",
-    "decode",
-    "PRINCIPLES",
-    "truncate",
-    "aggregate",
-    "error_response",
-    "success_response",
-    "empty_response",
+    "encode", "decode", "encode_dict", "encode_list", "decode_dict", "decode_list", "decode_scalar",
+    "AxiError", "exit_code_for_error",
+    "render_output", "render_error", "error_output", "merge_output",
+    "home_header_output", "collapse_home_directory",
+    "PRINCIPLES", "truncate", "aggregate", "empty_response",
 ]

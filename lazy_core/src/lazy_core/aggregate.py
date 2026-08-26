@@ -1,26 +1,32 @@
-"""Pre-computed aggregate utilities."""
+"""aggregate - Pre-computed aggregates.
+
+Mirrors AXI principle #4: include aggregated counts and statuses.
+"""
+
+from typing import Any
 
 
-def aggregate(items, key=None):
-    """Compute aggregates from a list of items.
+def aggregate(items: list, key: str | None = None) -> dict:
+    """Aggregate items into counts.
 
     Args:
-        items: List of items
-        key: Key to aggregate by (for dicts)
+        items: List of items to aggregate
+        key: Optional key to extract from dict items
 
     Returns:
-        Aggregate dict with counts
+        Dict with 'total' and per-value counts
     """
-    if not items:
-        return {"total": 0}
+    result: dict[str, Any] = {"total": len(items)}
 
-    counts = {}
     for item in items:
         if key and isinstance(item, dict):
-            value = item.get(key, "unknown")
+            val = str(item.get(key, "unknown"))
         else:
-            value = str(item)
+            val = str(item)
 
-        counts[value] = counts.get(value, 0) + 1
+        if val in result:
+            result[val] += 1
+        else:
+            result[val] = 1
 
-    return {"total": len(items), **counts}
+    return result

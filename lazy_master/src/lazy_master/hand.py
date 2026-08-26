@@ -1,94 +1,48 @@
-"""Worker hand that executes tasks."""
+"""lazy-master hand - Worker agent representation.
 
-import asyncio
+Mirrors firstmate's crewmate concept: a spawned worker in an isolated worktree.
+"""
+
 from dataclasses import dataclass, field
-from typing import Optional, Any
+from typing import Any
 from datetime import datetime
 
 
 @dataclass
 class LazyHand:
-    """Worker agent that executes tasks."""
+    """Worker agent in an isolated worktree.
+
+    Mirrors firstmate's crewmate: spawned to work on a specific task,
+    never addresses the captain directly, communication flows through master.
+    """
 
     id: str
     agent: str = "claude"
-    backend: Any = None
-    worktree: Optional[str] = None
-    task: Optional[dict] = None
     status: str = "idle"
-    result: Optional[dict] = None
-    endpoint: Optional[dict] = None
-    started_at: Optional[str] = None
-    completed_at: Optional[str] = None
+    task: dict[str, Any] | None = None
+    worktree: str | None = None
+    result: dict[str, Any] | None = None
+    created_at: datetime = field(default_factory=datetime.now)
+    completed_at: datetime | None = None
 
-    async def assign(self, task: dict) -> dict:
-        """Assign a task to this hand."""
-        self.task = task
-        self.status = "assigned"
-        self.started_at = datetime.now().isoformat()
-
-        if self.backend and hasattr(self.backend, "spawn"):
-            self.endpoint = await self.backend.spawn(self.id, {
-                "agent": self.agent,
-                "cwd": self.worktree or ".",
-            })
-            self.status = "working"
-
-        return self.endpoint or {"id": self.id}
-
-    async def send(self, text: str) -> dict:
-        """Send text to the agent."""
-        if not self.backend or not self.endpoint:
-            return {"delivered": False, "reason": "no-backend"}
-        return await self.backend.send(self.endpoint["id"], text)
-
-    async def capture(self, lines: int = 50) -> str:
-        """Capture terminal output."""
-        if not self.backend or not self.endpoint:
-            return ""
-        return await self.backend.capture(self.endpoint["id"], lines)
-
-    async def is_alive(self) -> dict:
-        """Check if agent is alive."""
-        if not self.backend or not self.endpoint:
-            return {"alive": False, "reason": "no-backend"}
-        return await self.backend.is_alive(self.endpoint["id"])
-
-    async def get_busy_state(self) -> dict:
-        """Get busy state."""
-        if not self.backend or not self.endpoint:
-            return {"state": "unknown", "source": "no-backend"}
-        return await self.backend.get_busy_state(self.endpoint["id"])
-
-    def complete(self, result: dict):
-        """Mark task as complete."""
-        self.result = result
-        self.status = "done"
-        self.completed_at = datetime.now().isoformat()
-
-    def fail(self, error: Exception):
-        """Mark task as failed."""
-        self.result = {"error": str(error)}
-        self.status = "failed"
-        self.completed_at = datetime.now().isoformat()
-
-    async def teardown(self):
-        """Teardown endpoint."""
-        if self.backend and self.endpoint:
-            result = await self.backend.teardown(self.endpoint["id"])
-            self.endpoint = None
-            return result
-        return {"teardown": "no-backend"}
-
-    def get_status(self) -> dict:
+    def get_status(self) -> dict[str, Any]:
         """Get hand status."""
         return {
             "id": self.id,
-            "task": self.task.get("description") if self.task else None,
             "status": self.status,
             "agent": self.agent,
-            "backend": self.backend.name if self.backend else None,
-            "window": self.endpoint.get("window") if self.endpoint else None,
-            "started_at": self.started_at,
-            "completed_at": self.completed_at,
+            "task": self.task,
+            "worktree": self.worktree,
         }
+
+    def complete(self, result: dict[str, Any]) -> None:
+        """Mark hand as done with result."""
+        self.status = "done"
+        self.result = result
+        self.completed_at = datetime.now()
+
+    def fail(self, error: Exception) -> None:
+        """Mark hand as failed."""
+        self.status = "failed"
+        self.result = {"error": str(error)}
+        self.completed_at = datetime.now()

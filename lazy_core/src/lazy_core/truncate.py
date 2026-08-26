@@ -1,19 +1,20 @@
-"""Content truncation utilities."""
+"""truncate - Content truncation with size hints.
+
+Mirrors AXI principle #3: truncate large text with size hints and --full escape hatch.
+"""
+
+from typing import Any
 
 
-def truncate(text, max_length=500, suffix="..."):
-    """Truncate text to max length with suffix.
+def truncate(text: Any, max_length: int = 500, suffix: str = "...") -> str | Any:
+    """Truncate text to max_length with suffix.
 
-    Args:
-        text: Text to truncate
-        max_length: Maximum length
-        suffix: Suffix to append if truncated
-
-    Returns:
-        Truncated text
+    Shows total size when truncated. The max_length includes the suffix.
     """
-    if not text or len(text) <= max_length:
+    if text is None:
+        return None
+    if not isinstance(text, str):
+        text = str(text)
+    if len(text) <= max_length:
         return text
-
-    truncated = text[: max_length - len(suffix)]
-    return truncated + suffix
+    return text[:max_length - len(suffix)] + suffix

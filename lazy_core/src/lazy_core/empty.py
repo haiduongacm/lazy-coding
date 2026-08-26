@@ -1,17 +1,22 @@
-"""Definitive empty state responses."""
+"""empty - Definitive empty states.
+
+Mirrors AXI principle #5: explicit "0 results" rather than ambiguous empty output.
+"""
+
+from typing import Any
 
 
-def empty_response(item_type="items"):
-    """Create a definitive empty state response.
+def empty_response(item_type: str = "items") -> dict[str, Any]:
+    """Generate definitive empty response.
 
     Args:
-        item_type: Type of items (e.g., 'results', 'tasks')
+        item_type: Name of the item type (e.g., "tasks", "items")
 
     Returns:
-        Empty state dict
+        Dict with total=0, empty list, and clear message
     """
     return {
         "total": 0,
-        f"{item_type}": [],
+        item_type: [],
         "message": f"No {item_type} found",
     }

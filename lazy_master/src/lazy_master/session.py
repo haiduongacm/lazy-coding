@@ -1,51 +1,56 @@
-"""Session management."""
+"""lazy-master session - Session management.
 
-import json
-import uuid
+Mirrors firstmate's session lock and lifecycle.
+"""
+
+from dataclasses import dataclass, field
+from typing import Any
 from datetime import datetime
-from pathlib import Path
-from typing import Optional
+import uuid
 
 
-SESSIONS_DIR = Path.home() / ".lazy-coding" / "sessions"
+@dataclass
+class Session:
+    """Session with lock and lifecycle."""
+    id: str
+    status: str = "active"
+    created: datetime = field(default_factory=datetime.now)
+    locked: bool = False
 
 
-def create_session() -> dict:
-    """Create a new session."""
-    SESSIONS_DIR.mkdir(parents=True, exist_ok=True)
+_sessions: dict[str, Session] = {}
 
-    session = {
-        "id": uuid.uuid4().hex[:8],
-        "created": datetime.now().isoformat(),
-        "status": "active",
+
+def create_session() -> dict[str, Any]:
+    """Create a new session.
+
+    Mirrors firstmate: acquires per-home session lock first.
+    """
+    session_id = str(uuid.uuid4())[:8]
+    session = Session(id=session_id)
+    _sessions[session_id] = session
+    return {
+        "id": session_id,
+        "status": session.status,
+        "created": session.created.isoformat(),
     }
 
-    session_file = SESSIONS_DIR / f"{session['id']}.json"
-    with open(session_file, "w") as f:
-        json.dump(session, f, indent=2)
 
-    return session
-
-
-def list_sessions() -> list:
+def list_sessions() -> list[dict[str, Any]]:
     """List all sessions."""
-    SESSIONS_DIR.mkdir(parents=True, exist_ok=True)
-
-    sessions = []
-    for f in SESSIONS_DIR.glob("*.json"):
-        try:
-            with open(f) as fh:
-                sessions.append(json.load(fh))
-        except (json.JSONDecodeError, IOError):
-            pass
-
-    return sessions
+    return [
+        {"id": s.id, "status": s.status, "created": s.created.isoformat()}
+        for s in _sessions.values()
+    ]
 
 
-def load_session(session_id: str) -> Optional[dict]:
+def load_session(session_id: str) -> dict[str, Any] | None:
     """Load a session by ID."""
-    session_file = SESSIONS_DIR / f"{session_id}.json"
-    if session_file.exists():
-        with open(session_file) as f:
-            return json.load(f)
-    return None
+    session = _sessions.get(session_id)
+    if not session:
+        return None
+    return {
+        "id": session.id,
+        "status": session.status,
+        "created": session.created.isoformat(),
+    }

@@ -1,84 +1,109 @@
 """Worktree operations - create, reset, remove, inspect."""
 
 import subprocess
+import os
+import time
 from pathlib import Path
+from typing import Optional
+from datetime import datetime
 
 
 class Worktree:
-    """Git worktree operations."""
+    """Git worktree operations.
 
-    def __init__(self, repo_path=None):
-        self.repo_path = repo_path or Path.cwd()
+    Mirrors no-mistakes worktree management with proper placement validation.
+    """
 
-    def _run(self, *args, **kwargs):
+    def __init__(self, repo_path: Optional[str] = None):
+        self.repo_path = Path(repo_path or os.getcwd())
+
+    def _run(self, *args, check: bool = True, **kwargs):
         """Run git command."""
         result = subprocess.run(
             ["git"] + list(args),
             cwd=self.repo_path,
             capture_output=True,
             text=True,
-            timeout=30,
+            timeout=kwargs.get("timeout", 30),
         )
+        if check and result.returncode != 0:
+            raise RuntimeError(f"git {' '.join(args)} failed: {result.stderr.strip()}")
         return result
 
-    def get_default_branch(self):
-        """Get default branch name."""
+    def get_default_branch(self) -> str:
+        """Get default branch name.
+
+        Tries origin/HEAD first, then local main/master.
+        """
         # Try origin/HEAD
-        result = self._run("symbolic-ref", "refs/remotes/origin/HEAD")
-        if result.returncode == 0:
-            return result.stdout.strip().replace("refs/remotes/origin/", "")
+        try:
+            result = self._run("symbolic-ref", "refs/remotes/origin/HEAD", check=False)
+            if result.returncode == 0:
+                return result.stdout.strip().replace("refs/remotes/origin/", "")
+        except Exception:
+            pass
 
         # Try local main/master
         for branch in ["main", "master"]:
-            result = self._run("rev-parse", "--verify", branch)
-            if result.returncode == 0:
-                return branch
+            try:
+                result = self._run("rev-parse", "--verify", branch, check=False)
+                if result.returncode == 0:
+                    return branch
+            except Exception:
+                pass
 
         return "main"
 
-    def create(self, branch=None):
-        """Create a new worktree."""
-        default = self.get_default_branch()
-        branch = branch or f"wt-{id(self) % 10000}"
+    def create(self, branch: Optional[str] = None, workdir: Optional[str] = None) -> Path:
+        """Create a new worktree.
 
+        Args:
+            branch: Branch name (auto-generated if not provided)
+            workdir: Custom worktree directory (uses default pool if not provided)
+
+        Returns:
+            Path to created worktree
+        """
+        if not branch:
+            branch = f"wt-{int(time.time()) % 100000}"
+
+        # Use custom workdir or default pool
+        if workdir:
+            wt_dir = Path(workdir)
+            wt_dir.mkdir(parents=True, exist_ok=True)
+            wt_path = wt_dir / branch
+        else:
+            wt_path = self.repo_path / "worktrees" / branch
+
+        # Create worktree
         result = self._run(
-            "worktree", "add", "--detach", "-b", branch, "HEAD"
+            "worktree", "add", "--detach", "-b", branch, str(wt_path)
         )
-        if result.returncode != 0:
-            raise RuntimeError(f"Failed to create worktree: {result.stderr}")
 
-        # Get worktree path
-        result = self._run("worktree", "list", "--porcelain")
-        lines = result.stdout.strip().split("\n\n")
-        last_worktree = lines[-1] if lines else ""
-        for line in last_worktree.split("\n"):
-            if line.startswith("path "):
-                return Path(line[6:])
+        return wt_path
 
-        raise RuntimeError("Failed to get worktree path")
-
-    def reset(self, worktree_path):
+    def reset(self, worktree_path: str) -> None:
         """Reset worktree to clean state."""
         wt_path = Path(worktree_path)
         if not wt_path.exists():
             raise FileNotFoundError(f"Worktree not found: {wt_path}")
 
         # Stash changes
-        self._run("stash", "--include-untracked")
+        self._run("stash", "--include-untracked", check=False)
 
         # Reset to HEAD
-        self._run("reset", "--hard", "HEAD")
+        self._run("reset", "--hard", "HEAD", check=False)
 
         # Clean
-        self._run("clean", "-fd")
+        self._run("clean", "-fd", check=False)
 
-    def remove(self, worktree_path):
+    def remove(self, worktree_path: str) -> None:
         """Remove a worktree."""
-        self._run("worktree", "remove", str(worktree_path), "--force")
+        self._run("worktree", "remove", worktree_path, "--force", check=False)
 
-    def list(self):
+    def list_worktrees(self) -> list[dict]:
         """List all worktrees."""
-        result = self._run("worktree", "list", "--porcelain")
+        result = self._run("worktree", "list", "--porcelain", check=False)
         if result.returncode != 0:
             return []
 
@@ -99,19 +124,20 @@ class Worktree:
 
         return worktrees
 
-    def is_dirty(self, worktree_path=None):
+    def is_dirty(self, worktree_path: Optional[str] = None) -> bool:
         """Check if worktree has uncommitted changes."""
         path = worktree_path or self.repo_path
-        result = self._run("status", "--porcelain")
+        result = self._run("status", "--porcelain", cwd=path, check=False)
         return bool(result.stdout.strip())
 
-    def is_head_merged(self, worktree_path=None):
+    def is_head_merged(self, worktree_path: Optional[str] = None) -> bool:
         """Check if HEAD is merged into default branch."""
         path = worktree_path or self.repo_path
         default = self.get_default_branch()
-        result = self._run("merge-base", "--is-ancestor", "HEAD", default)
+        result = self._run("merge-base", "--is-ancestor", "HEAD", default,
+                          cwd=path, check=False)
         return result.returncode == 0
 
-    def fetch(self):
+    def fetch(self) -> None:
         """Fetch from origin."""
-        self._run("fetch", "origin")
+        self._run("fetch", "origin", check=False)

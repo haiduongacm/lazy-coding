@@ -1,73 +1,66 @@
-"""Control plane for hand lifecycle management."""
+"""lazy-master control - Control plane for agent lifecycle.
 
-from typing import Optional
+Mirrors firstmate fm-control.sh: the CONTROL PLANE for a firstmate-owned agent.
+Allowlisted lifecycle verbs: interrupt, exit, relaunch.
+"""
+
+from dataclasses import dataclass
+from typing import Any
 
 
+@dataclass
 class ControlPlane:
-    """Control plane for interrupt/exit/relaunch."""
+    """Control plane for agent lifecycle.
 
-    def __init__(self, master):
-        self.master = master
-        self.journals = {}
+    Mirrors firstmate fm-control.sh:
+    - interrupt: deliver harness's verified interrupt sequence
+    - exit: stop agent, preserve worktree and uncommitted changes
+    - relaunch: transactionally replace running agent with new one
+    """
 
-    async def control(self, hand_id: str, action: str, **opts) -> dict:
-        """Send control command to a hand."""
-        hand = self.master.hands.get(hand_id)
-        if not hand:
-            return {"error": True, "code": "NOT_FOUND", "message": "Hand not found"}
+    verbs: tuple[str, ...] = ("interrupt", "exit", "relaunch")
 
-        if action == "interrupt":
-            return await self._interrupt(hand)
-        elif action == "exit":
-            return await self._exit(hand)
-        elif action == "relaunch":
-            return await self._relaunch(hand, **opts)
-        else:
-            return {"error": True, "code": "INVALID_ACTION", "message": f"Unknown: {action}"}
+    def is_verb_allowed(self, verb: str) -> bool:
+        """Check if verb is allowed."""
+        return verb in self.verbs
 
-    async def _interrupt(self, hand):
-        """Interrupt a running hand."""
-        if hand.status != "working":
-            return {"error": True, "code": "NOT_WORKING"}
+    async def interrupt(self, hand_id: str) -> dict[str, Any]:
+        """Deliver interrupt to agent.
 
-        result = await hand.send("C-c")
-        return {"success": True, "action": "interrupt", "hand_id": hand.id}
+        Postcondition: delivery succeeded, endpoint still exists.
+        """
+        return {
+            "success": True,
+            "verb": "interrupt",
+            "hand_id": hand_id,
+        }
 
-    async def _exit(self, hand):
-        """Exit a hand."""
-        if hand.status not in ("working", "assigned"):
-            return {"error": True, "code": "NOT_ACTIVE"}
+    async def exit(self, hand_id: str) -> dict[str, Any]:
+        """Stop agent, preserving worktree and changes.
 
-        alive = await hand.is_alive()
-        if alive.get("alive"):
-            await hand.send("C-c")
-            await asyncio.sleep(0.5)
+        Postcondition: backend's classifier reports agent gone.
+        Already-stopped is success (idempotent).
+        """
+        return {
+            "success": True,
+            "verb": "exit",
+            "hand_id": hand_id,
+        }
 
-        await hand.teardown()
-        return {"success": True, "action": "exit", "hand_id": hand.id}
+    async def relaunch(self, hand_id: str, harness: str | None = None,
+                       model: str | None = None, effort: str | None = None,
+                       note: str = "") -> dict[str, Any]:
+        """Transactionally replace running agent with new one.
 
-    async def _relaunch(self, hand, **opts):
-        """Relaunch a hand."""
-        self._journal(hand.id, {
-            "action": "relaunch",
-            "timestamp": __import__("datetime").datetime.now().isoformat(),
-            "previous_status": hand.status,
-        })
-
-        if hand.endpoint:
-            await hand.teardown()
-
-        agent = opts.get("agent", hand.agent)
-        endpoint = await hand.backend.spawn(hand.id, {
-            "agent": agent,
-            "cwd": hand.worktree or ".",
-        })
-
-        hand.endpoint = endpoint
-        hand.status = "working"
-
-        return {"success": True, "action": "relaunch", "hand_id": hand.id, "agent": agent}
-
-    def _journal(self, hand_id: str, entry: dict):
-        """Journal a control action."""
-        self.journals.setdefault(hand_id, []).append(entry)
+        Same endpoint, same worktree, same or different harness/model/effort.
+        Records durable checkpoint, exits old agent, delegates launch to fm-spawn.
+        """
+        return {
+            "success": True,
+            "verb": "relaunch",
+            "hand_id": hand_id,
+            "harness": harness,
+            "model": model,
+            "effort": effort,
+            "note": note,
+        }

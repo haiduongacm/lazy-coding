@@ -38,6 +38,10 @@ asyncio_mode = "auto"
 line-length = 120
 target-version = "py310"
 
+[tool.setuptools.packages.find]
+where = ["."]
+include = ["lazy_core*", "lazy_pool*", "lazy_gate*", "lazy_master*", "lazy_view*"]
+
 [tool.ruff.lint]
 select = ["E", "F", "I"]
 

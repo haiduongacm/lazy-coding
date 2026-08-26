@@ -1,35 +1,47 @@
-"""Structured error and success responses."""
+"""error_response - Structured error responses.
+
+Mirrors AXI principle #6: structured errors on stdout.
+"""
+
+from typing import Any
 
 
-def error_response(code, message, help_text=None):
-    """Create a structured error response.
+def error_response(code: str, message: str, suggestions: list[str] | str | None = None) -> dict[str, Any]:
+    """Generate structured error response.
 
     Args:
-        code: Error code (e.g., 'NOT_FOUND')
+        code: Error code (e.g., "NOT_FOUND", "VALIDATION_ERROR")
         message: Human-readable error message
-        help_text: Optional help text
+        suggestions: Optional list of actionable suggestions or single string
 
     Returns:
-        Error dict
+        Dict with error=True, code, message, and optional help
     """
-    response = {"error": True, "code": code, "message": message}
-    if help_text:
-        response["help"] = help_text if isinstance(help_text, list) else [help_text]
-    return response
+    output: dict[str, Any] = {
+        "error": True,
+        "code": code,
+        "message": message,
+    }
+    if suggestions:
+        if isinstance(suggestions, str):
+            output["help"] = [suggestions]
+        else:
+            output["help"] = suggestions
+    return output
 
 
-def success_response(data=None, **kwargs):
-    """Create a structured success response.
+def success_response(data: dict[str, Any] | None = None, **kwargs: Any) -> dict[str, Any]:
+    """Generate structured success response.
 
     Args:
-        data: Optional data payload
-        **kwargs: Additional fields
+        data: Optional data dict to include
+        **kwargs: Additional key-value pairs
 
     Returns:
-        Success dict
+        Dict with success=True and optional data
     """
-    response = {"success": True}
+    output: dict[str, Any] = {"success": True}
     if data:
-        response["data"] = data
-    response.update(kwargs)
-    return response
+        output["data"] = data
+    output.update(kwargs)
+    return output

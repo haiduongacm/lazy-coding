@@ -1,9 +1,10 @@
-"""lazy-gate - Git gate + pipeline validation."""
+"""lazy-gate - Git gate and pipeline validation.
+
+Mirrors no-mistakes internal/gate: bare repo creation, hook installation,
+remote management, and repository registration.
+"""
 
 from .gate import Gate
 from .pipeline import Pipeline
-from .worktree import Worktree
 
-__version__ = "1.0.0"
-
-__all__ = ["Gate", "Pipeline", "Worktree"]
+__all__ = ["Gate", "Pipeline"]

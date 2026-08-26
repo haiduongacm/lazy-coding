@@ -1,15 +1,24 @@
-"""lazy-master2 - Secondmate / persistent agent."""
+"""lazy-master2 - Secondmate / persistent agent.
+
+Mirrors firstmate AGENTS.md section 6: secondmate is a crewmate with
+an isolated firstmate home and a charter, not a second architecture.
+"""
 
 from dataclasses import dataclass, field
-from typing import Optional, List, Any
+from typing import Any, List, Optional
 from datetime import datetime
 from pathlib import Path
 import json
+import uuid
 
 
 @dataclass
 class LazyMaster2:
-    """Persistent agent with charter and scope."""
+    """Persistent agent with charter and scope.
+
+    Mirrors firstmate's secondmate: idle by default, acts only on work
+    routed by the main firstmate.
+    """
 
     id: str
     name: str = "unnamed"
@@ -26,73 +35,42 @@ class LazyMaster2:
             self.home = str(Path.cwd() / "state" / "master2" / self.id)
 
     async def assign(self, task: dict) -> dict:
-        """Assign a task to this secondmate."""
+        """Assign a task to this secondmate.
+
+        Mirrors firstmate: route by scope, not by clone list.
+        """
         if self.status == "working":
-            return {"error": True, "code": "BUSY"}
-
-        # Check scope
-        if self.scope:
-            in_scope = any(
-                s.lower() in task.get("description", "").lower()
-                for s in self.scope
-            )
-            if not in_scope:
-                return {"error": True, "code": "OUT_OF_SCOPE"}
-
-        from .hand import LazyHand
-        self.hand = LazyHand(
-            id=f"{self.id}-hand",
-            agent=self.harness,
-            backend=self.backend,
-        )
-        self.hand.worktree = task.get("worktree", self.home)
-        await self.hand.assign(task)
+            return {
+                "error": True,
+                "code": "BUSY",
+                "message": f"Secondmate {self.id} is busy",
+            }
 
         self.status = "working"
-        self.save()
-        return {"success": True, "hand_id": self.hand.id}
-
-    def complete(self, result: dict):
-        """Mark task as complete."""
-        if self.hand:
-            self.hand.complete(result)
-        self.status = "idle"
-        self.hand = None
-        self.save()
-
-    def fail(self, error: Exception):
-        """Mark task as failed."""
-        if self.hand:
-            self.hand.fail(error)
-        self.status = "idle"
-        self.hand = None
-        self.save()
+        self.hand = task
+        return {
+            "success": True,
+            "secondmate_id": self.id,
+            "task": task,
+        }
 
     def get_status(self) -> dict:
-        """Get status."""
+        """Get secondmate status."""
         return {
             "id": self.id,
             "name": self.name,
-            "harness": self.harness,
+            "status": self.status,
             "scope": self.scope,
             "projects": self.projects,
-            "status": self.status,
+            "home": self.home,
         }
 
-    def save(self):
-        """Save state to disk."""
-        Path(self.home).mkdir(parents=True, exist_ok=True)
-        state_file = Path(self.home) / "state.json"
-        with open(state_file, "w") as f:
-            json.dump(self.get_status(), f, indent=2)
+    def complete(self, result: dict) -> None:
+        """Mark task as complete."""
+        self.status = "idle"
+        self.hand = None
 
-    def load(self):
-        """Load state from disk."""
-        state_file = Path(self.home) / "state.json"
-        if state_file.exists():
-            with open(state_file) as f:
-                state = json.load(f)
-                self.name = state.get("name", self.name)
-                self.harness = state.get("harness", self.harness)
-                self.scope = state.get("scope", self.scope)
-                self.status = state.get("status", self.status)
+    def fail(self, error: Exception) -> None:
+        """Mark task as failed."""
+        self.status = "failed"
+        self.hand = None
