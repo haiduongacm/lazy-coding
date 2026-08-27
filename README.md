@@ -25,19 +25,19 @@ python -m lazy_gate.cli push
 - **[lazy-gate](docs/lazy-gate.md)** - Pipeline API
 - **[lazy-pool](docs/lazy-pool.md)** - Worktree pool API
 
-## Trong Claude
+## Usage in Claude
 
-Khi bạn yêu cầu Claude làm task:
+When you ask Claude to do a task:
 
 ```
-Bạn: "Fix login bug"
+User: "Fix login bug"
 
 Claude:
   1. cd D:\lazy-coding
   2. python -m lazy_pool.cli get
-  3. Viết test, code trong worktree
+  3. Write tests and code in worktree
   4. python -m lazy_gate.cli push
   5. python -m lazy_pool.cli return
 ```
 
-Không cần cài đặt. Không cần pip. Chỉ cần clone và chạy.
+No installation needed. No pip needed. Just clone and run.
