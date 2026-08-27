@@ -4,13 +4,13 @@ AI Coding Agentic Platform - Zero-install, token-efficient, agent-native
 
 ## Features
 
-| Package | Description |
-|---------|-------------|
-| **lazy-core** | TOON format encoder/decoder, AXI principles |
-| **lazy-pool** | Git worktree pool manager |
-| **lazy-gate** | Git gate + pipeline validation |
-| **lazy-master** | Multi-agent orchestrator with tmux backend |
-| **lazy-view** | HTML artifact review tool |
+| Package | Lines | Parity | Description |
+|---------|-------|--------|-------------|
+| **lazy-core** | 174 | 100% | TOON format encoder/decoder, AXI principles |
+| **lazy-pool** | 438 | 82% | Git worktree pool manager |
+| **lazy-gate** | 1,108 | 75% | Git gate + pipeline validation |
+| **lazy-master** | 3,000+ | 85% | Multi-agent orchestrator |
+| **lazy-view** | - | - | HTML artifact review tool |
 
 ## Installation
 
@@ -66,11 +66,37 @@ items[3]:
 ├─────────────────────────────────────────────────────────┤
 │  dispatch() → lazy-hand → tmux backend → agent          │
 │       │              ↑                                   │
-│  watcher() ─────────┘  (monitor fleet)                  │
+│  watcher() ─────────┘  (daemon loop, signal scan)       │
 │  control() ──────────── (interrupt/exit/relaunch)       │
-│  guard() ────────────── (health check)                  │
-│  snapshot() ─────────── (full status)                   │
-│  lazy-master2() ─────── (persistent agent)              │
+│  guard() ────────────── (health checks)                 │
+│  snapshot() ─────────── (fleet status)                  │
+│  session() ──────────── (bootstrap, lock)               │
+│  backlog() ──────────── (task queue)                    │
+└─────────────────────────────────────────────────────────┘
+         ↓
+┌─────────────────────────────────────────────────────────┐
+│                    lazy-gate                             │
+├─────────────────────────────────────────────────────────┤
+│  Pipeline: review → test → lint → document → push → PR  │
+│  Executor: step-based, approval gates, fix-loop         │
+│  Gate: init, eject, push, status                        │
+└─────────────────────────────────────────────────────────┘
+         ↓
+┌─────────────────────────────────────────────────────────┐
+│                    lazy-pool                             │
+├─────────────────────────────────────────────────────────┤
+│  Layout: canonical, contains, placement                 │
+│  Pool: get, return, prune                               │
+│  State: atomic write, lock, placement                   │
+└─────────────────────────────────────────────────────────┘
+         ↓
+┌─────────────────────────────────────────────────────────┐
+│                    lazy-core                             │
+├─────────────────────────────────────────────────────────┤
+│  TOON: encode/decode (40% fewer tokens)                 │
+│  Errors: AxiError, exit codes                           │
+│  Output: collapse home, render                          │
+│  Principles: 10 AXI design rules                       │
 └─────────────────────────────────────────────────────────┘
 ```
 
@@ -79,7 +105,7 @@ items[3]:
 ```bash
 # Dispatch
 lazy-master dispatch "fix login bug"
-lazy-master dispatch --backend tmux --agent opencode "fix bug"
+lazy-master dispatch --backend tmux --agent claude "fix bug"
 
 # Status
 lazy-master status
