@@ -361,3 +361,145 @@ echo "lazy-coding: Validating push..."
                 "initialized": False,
                 "error": str(e),
             }
+
+    def reattach_relocated_repo(self, new_path: str) -> dict[str, Any]:
+        """Reattach a relocated repository.
+
+        Mirrors no-mistakes: when a repo is moved, reattach the gate
+        to the new location.
+        """
+        new_root = Path(new_path).resolve()
+        if not new_root.exists():
+            return {
+                "success": False,
+                "error": f"Path {new_path} does not exist",
+            }
+
+        # Find existing gate
+        abs_root = str(new_root)
+        existing_id = self._check_existing_gate(abs_root)
+        if not existing_id:
+            return {
+                "success": False,
+                "error": "No gate found for this repository",
+            }
+
+        bare_dir = self.repos_dir / f"{existing_id}.git"
+        if not bare_dir.exists():
+            return {
+                "success": False,
+                "error": f"Bare repo {bare_dir} does not exist",
+            }
+
+        # Update remote URL to point to new location
+        try:
+            result = self._run_git("remote", "set-url", REMOTE_NAME,
+                                   str(bare_dir), check=False)
+            if result.returncode != 0:
+                return {
+                    "success": False,
+                    "error": f"Failed to update remote URL: {result.stderr}",
+                }
+
+            return {
+                "success": True,
+                "repo_id": existing_id,
+                "new_path": str(new_root),
+                "bare_dir": str(bare_dir),
+            }
+        except Exception as e:
+            return {
+                "success": False,
+                "error": str(e),
+            }
+
+    def remove_repo_worktrees(self) -> dict[str, Any]:
+        """Remove all worktrees for this repository.
+
+        Mirrors no-mistakes: cleanup worktrees when ejecting gate.
+        """
+        try:
+            result = self._run_git("worktree", "list", "--porcelain", check=False)
+            if result.returncode != 0:
+                return {
+                    "success": True,
+                    "message": "No worktrees to remove",
+                }
+
+            worktrees = []
+            current_worktree = None
+            for line in result.stdout.strip().split("\n"):
+                if line.startswith("worktree "):
+                    current_worktree = line[10:]
+                elif line.startswith("HEAD ") and current_worktree:
+                    # Skip the main worktree
+                    main_worktree = self._run_git("rev-parse", "--show-toplevel",
+                                                  check=False).stdout.strip()
+                    if current_worktree != main_worktree:
+                        worktrees.append(current_worktree)
+                    current_worktree = None
+
+            removed = []
+            for wt in worktrees:
+                result = self._run_git("worktree", "remove", wt, "--force", check=False)
+                if result.returncode == 0:
+                    removed.append(wt)
+
+            return {
+                "success": True,
+                "removed": removed,
+                "total": len(removed),
+            }
+        except Exception as e:
+            return {
+                "success": False,
+                "error": str(e),
+            }
+
+    def reachable_run_worktree(self, task_id: str) -> dict[str, Any]:
+        """Get the worktree for a reachable run.
+
+        Mirrors no-mistakes: find the worktree associated with a task.
+        """
+        state_dir = self.nm_home / "state"
+        meta_file = state_dir / f"{task_id}.meta"
+
+        if not meta_file.exists():
+            return {
+                "success": False,
+                "error": f"No task {task_id} found",
+            }
+
+        try:
+            with open(meta_file, "r") as f:
+                meta = {}
+                for line in f:
+                    if "=" in line:
+                        key, _, value = line.partition("=")
+                        meta[key.strip()] = value.strip()
+
+            worktree = meta.get("worktree")
+            if not worktree:
+                return {
+                    "success": False,
+                    "error": f"Task {task_id} has no recorded worktree",
+                }
+
+            wt_path = Path(worktree)
+            if not wt_path.exists():
+                return {
+                    "success": False,
+                    "error": f"Worktree {worktree} does not exist",
+                }
+
+            return {
+                "success": True,
+                "task_id": task_id,
+                "worktree": str(wt_path),
+                "exists": True,
+            }
+        except Exception as e:
+            return {
+                "success": False,
+                "error": str(e),
+            }

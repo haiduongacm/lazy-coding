@@ -5,6 +5,8 @@ Mirrors firstmate AGENTS.md section 7: task lifecycle and intake.
 
 import re
 from typing import Any
+from pathlib import Path
+import os
 
 
 def parse_request(text: str) -> list[dict[str, Any]]:
@@ -16,7 +18,6 @@ def parse_request(text: str) -> list[dict[str, Any]]:
         return [{"description": text, "type": "ship", "priority": "normal"}]
 
     tasks = []
-    # Split on common separators
     parts = re.split(r'\s+(?:and|then|also)\s+|\n+', text.strip())
 
     for part in parts:
@@ -74,3 +75,72 @@ def detect_priority(description: str) -> str:
             return "low"
 
     return "normal"
+
+
+def resolve_delivery_mode(project_name: str | None = None,
+                          description: str = "",
+                          project_registry: dict[str, Any] | None = None) -> dict[str, Any]:
+    """Resolve delivery mode for a task.
+
+    Mirrors firstmate: resolve every ship task's concrete delivery mode and
+    yolo merge posture at intake.
+
+    Returns:
+        Dict with mode, yolo, and reason
+    """
+    # Check if project has explicit mode
+    if project_registry and project_name and project_name in project_registry:
+        entry = project_registry[project_name]
+        mode = entry.get("mode", "no-mistakes")
+        yolo = entry.get("yolo", "off")
+        return {
+            "mode": mode,
+            "yolo": yolo,
+            "reason": f"project_registry:{project_name}",
+        }
+
+    # Check if task is internal-only tooling
+    desc_lower = description.lower()
+    internal_keywords = ["internal", "tooling", "automation", "ci", "cd",
+                         "workflow", "process", "contributor"]
+    is_internal = any(kw in desc_lower for kw in internal_keywords)
+
+    if is_internal:
+        return {
+            "mode": "direct-PR",
+            "yolo": "off",
+            "reason": "internal_tooling",
+        }
+
+    # Default: no-mistakes with yolo off
+    return {
+        "mode": "no-mistakes",
+        "yolo": "off",
+        "reason": "default",
+    }
+
+
+def resolve_project(text: str, projects: list[str] | None = None) -> str | None:
+    """Resolve project from request text.
+
+    Mirrors firstmate: resolve the project independently for every request.
+    An explicit project wins, a clear follow-up inherits its referent.
+    """
+    if not projects:
+        return None
+
+    text_lower = text.lower()
+
+    # Check for explicit project mention
+    for project in projects:
+        if project.lower() in text_lower:
+            return project
+
+    # Check for partial matches
+    for project in projects:
+        # Simple word boundary match
+        pattern = r'\b' + re.escape(project.lower()) + r'\b'
+        if re.search(pattern, text_lower):
+            return project
+
+    return None

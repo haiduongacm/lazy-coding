@@ -8,6 +8,7 @@ Key concepts from firstmate:
 - Yolo: on (auto-merge green), off (captain approves every merge)
 - Project registry in data/projects.md
 - Present working directory detection
+- Raw output mode
 """
 
 import os
@@ -34,37 +35,45 @@ class ProjectMode:
         self.data_dir = Path(data_dir or os.path.expanduser("~/.lazy-coding/data"))
         self.projects_file = self.data_dir / "projects.md"
 
-    def resolve(self, project_name: str, registry: dict[str, Any] | None = None) -> dict[str, Any]:
+    def resolve(self, project_name: str, registry: dict[str, Any] | None = None,
+                raw: bool = False) -> dict[str, Any]:
         """Resolve project's registered delivery posture.
 
-        Returns mode and yolo merge posture.
+        Args:
+            project_name: Project name
+            registry: Optional registry dict
+            raw: If True, return raw mode string instead of dict
+
+        Returns:
+            Dict with mode and yolo, or raw string if raw=True
         """
         if registry and project_name in registry:
             entry = registry[project_name]
             mode = entry.get("mode", "no-mistakes")
             yolo = entry.get("yolo", "off")
 
-            # Validate mode
             if mode not in VALID_MODES:
-                return {
-                    "mode": "no-mistakes",
-                    "yolo": "off",
-                    "warning": f"Unknown mode '{mode}', defaulting to no-mistakes",
-                }
+                mode = "no-mistakes"
+                yolo = "off"
 
-            # Map conditional policy to most rigorous leg
             if mode == "no-mistakes-prod-only":
                 mode = "no-mistakes"
 
+            if raw:
+                return mode
             return {"mode": mode, "yolo": yolo}
 
         # Check projects.md registry
         if self.projects_file.exists():
             entry = self._parse_registry(project_name)
             if entry:
+                if raw:
+                    return entry["mode"]
                 return entry
 
-        # Default: no-mistakes with yolo off
+        # Default
+        if raw:
+            return "no-mistakes"
         return {
             "mode": "no-mistakes",
             "yolo": "off",
@@ -77,8 +86,6 @@ class ProjectMode:
             with open(self.projects_file, "r") as f:
                 content = f.read()
 
-            # Simple markdown parsing for project entries
-            # Look for lines like: - project-name: mode=no-mistakes yolo=off
             for line in content.split("\n"):
                 if project_name in line:
                     mode_match = re.search(r'mode=(\S+)', line)
@@ -101,10 +108,7 @@ class ProjectMode:
 
     def register(self, project_name: str, mode: str = "no-mistakes",
                  yolo: str = "off") -> dict[str, Any]:
-        """Register project in registry.
-
-        Mirrors firstmate: updates data/projects.md.
-        """
+        """Register project in registry."""
         if mode not in VALID_MODES:
             return {
                 "error": True,
@@ -119,19 +123,15 @@ class ProjectMode:
                 "message": "yolo must be 'on' or 'off'",
             }
 
-        # Ensure data directory exists
         self.data_dir.mkdir(parents=True, exist_ok=True)
 
-        # Read existing content
         content = ""
         if self.projects_file.exists():
             with open(self.projects_file, "r") as f:
                 content = f.read()
 
-        # Update or add entry
         entry_line = f"- {project_name}: mode={mode} yolo={yolo}\n"
 
-        # Check if project already exists
         lines = content.split("\n")
         updated = False
         for i, line in enumerate(lines):
@@ -143,7 +143,6 @@ class ProjectMode:
         if not updated:
             lines.append(entry_line.strip())
 
-        # Write back
         with open(self.projects_file, "w") as f:
             f.write("\n".join(lines))
 
@@ -167,7 +166,6 @@ class ProjectMode:
                     if not line or not line.startswith("-"):
                         continue
 
-                    # Parse: - project-name: mode=no-mistakes yolo=off
                     match = re.match(r'-\s+(\S+):\s+mode=(\S+)\s+yolo=(\S+)', line)
                     if match:
                         projects.append({
@@ -181,14 +179,10 @@ class ProjectMode:
         return projects
 
     def detect_project(self, path: str | None = None) -> str | None:
-        """Detect project name from path.
-
-        Mirrors firstmate: present working directory detection.
-        """
+        """Detect project name from path."""
         if path is None:
             path = os.getcwd()
 
-        # Try to find project name from git remote
         try:
             import subprocess
             result = subprocess.run(
@@ -200,9 +194,6 @@ class ProjectMode:
             )
             if result.returncode == 0:
                 url = result.stdout.strip()
-                # Extract project name from URL
-                # https://github.com/user/project.git -> project
-                # git@github.com:user/project.git -> project
                 parts = url.rstrip("/").split("/")
                 if parts:
                     name = parts[-1]
@@ -212,5 +203,4 @@ class ProjectMode:
         except Exception:
             pass
 
-        # Fallback to directory name
         return os.path.basename(path)

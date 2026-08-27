@@ -9,6 +9,8 @@ Key concepts from firstmate:
 - Backlog from data/backlog.md
 - Git status for each project
 - PR status for each project
+- Secondmate summaries
+- Main inventory validation
 """
 
 import os
@@ -27,42 +29,40 @@ class FleetSnapshot:
     - generated: UTC observation time
     - tasks[]: one row per state/<id>.meta
     - backlog: {path, present, records[]}
+    - secondmate_current: bounded current summaries
+    - main_inventory: validity checks
     """
 
-    def __init__(self, state_dir: str | None = None, data_dir: str | None = None):
+    def __init__(self, state_dir: str | None = None, data_dir: str | None = None,
+                 projects_dir: str | None = None):
         self.state_dir = Path(state_dir or os.path.expanduser("~/.lazy-coding/state"))
         self.data_dir = Path(data_dir or os.path.expanduser("~/.lazy-coding/data"))
+        self.projects_dir = Path(projects_dir or os.path.expanduser("~/.lazy-coding/projects"))
 
-    def generate(self, projects_dir: str | None = None) -> dict[str, Any]:
-        """Generate fleet snapshot.
-
-        Args:
-            projects_dir: Directory containing project clones
-
-        Returns:
-            Structured fleet snapshot
-        """
+    def generate(self) -> dict[str, Any]:
+        """Generate fleet snapshot."""
         now = datetime.now(timezone.utc).isoformat()
 
-        # Collect tasks from state files
         tasks = self._collect_tasks()
-
-        # Collect backlog
         backlog = self._collect_backlog()
-
-        # Collect project statuses
-        projects = self._collect_projects(projects_dir)
+        projects = self._collect_projects()
+        secondmates = self._collect_secondmates()
+        main_inventory = self._validate_main_inventory(tasks, backlog)
 
         return {
             "schema": "lazy-coding-fleet-snapshot.v1",
             "generated": now,
+            "fm_home": str(self.state_dir.parent),
             "tasks": tasks,
             "backlog": backlog,
             "projects": projects,
+            "secondmate_current": secondmates,
+            "main_inventory": main_inventory,
             "summary": {
                 "total_tasks": len(tasks),
                 "active_tasks": sum(1 for t in tasks if t.get("status") == "working"),
                 "total_projects": len(projects),
+                "total_secondmates": len(secondmates.get("records", [])),
             },
         }
 
@@ -85,7 +85,6 @@ class FleetSnapshot:
                             key, _, value = line.partition("=")
                             meta[key.strip()] = value.strip()
 
-                # Read status tail
                 status_file = self.state_dir / f"{task_id}.status"
                 status_tail = []
                 if status_file.exists():
@@ -93,12 +92,28 @@ class FleetSnapshot:
                         lines = f.readlines()
                         status_tail = [l.strip() for l in lines[-5:]]
 
+                # Check endpoint existence
+                endpoint_exists = False
+                backend = meta.get("backend", "tmux")
+                window = meta.get("window", "")
+                if backend == "tmux" and window:
+                    try:
+                        result = subprocess.run(
+                            ["tmux", "has-session", "-t", window],
+                            capture_output=True,
+                            timeout=5,
+                        )
+                        endpoint_exists = result.returncode == 0
+                    except Exception:
+                        pass
+
                 tasks.append({
                     "id": task_id,
                     "meta": meta,
                     "status_tail": status_tail,
                     "has_worktree": (self.state_dir / f"{task_id}.worktree").exists(),
                     "has_turn_ended": (self.state_dir / f"{task_id}.turn-ended").exists(),
+                    "endpoint_exists": endpoint_exists,
                 })
             except Exception:
                 pass
@@ -138,7 +153,6 @@ class FleetSnapshot:
             if not line:
                 continue
 
-            # Parse task items (e.g., "- [ ] Task description")
             if line.startswith("- ["):
                 if current:
                     records.append(current)
@@ -155,21 +169,16 @@ class FleetSnapshot:
 
         return records
 
-    def _collect_projects(self, projects_dir: str | None = None) -> list[dict[str, Any]]:
+    def _collect_projects(self) -> list[dict[str, Any]]:
         """Collect project statuses."""
         projects = []
-        if not projects_dir:
+        if not self.projects_dir.exists():
             return projects
 
-        projects_path = Path(projects_dir)
-        if not projects_path.exists():
-            return projects
-
-        for project_dir in projects_path.iterdir():
+        for project_dir in self.projects_dir.iterdir():
             if not project_dir.is_dir():
                 continue
 
-            # Check if it's a git repo
             git_dir = project_dir / ".git"
             if not git_dir.exists():
                 continue
@@ -179,7 +188,6 @@ class FleetSnapshot:
                 "path": str(project_dir),
             }
 
-            # Get git status
             try:
                 result = subprocess.run(
                     ["git", "status", "--porcelain"],
@@ -193,7 +201,6 @@ class FleetSnapshot:
             except Exception:
                 project_info["dirty"] = None
 
-            # Get current branch
             try:
                 result = subprocess.run(
                     ["git", "rev-parse", "--abbrev-ref", "HEAD"],
@@ -209,3 +216,100 @@ class FleetSnapshot:
             projects.append(project_info)
 
         return projects
+
+    def _collect_secondmates(self) -> dict[str, Any]:
+        """Collect secondmate summaries.
+
+        Mirrors firstmate: bounded current summaries for registered secondmates.
+        """
+        records = []
+        secondmates_file = self.data_dir / "secondmates.md"
+
+        if not secondmates_file.exists():
+            return {
+                "records": [],
+                "total": 0,
+                "shown": 0,
+                "truncated": False,
+            }
+
+        try:
+            with open(secondmates_file, "r") as f:
+                content = f.read()
+
+            # Parse secondmate entries
+            for line in content.split("\n"):
+                line = line.strip()
+                if not line or line.startswith("#"):
+                    continue
+
+                # Simple parsing: - name: home=/path/to/home
+                match = re.match(r'-\s+(\S+):\s+home=(\S+)', line)
+                if match:
+                    name = match.group(1)
+                    home = match.group(2)
+                    home_path = Path(home)
+
+                    if home_path.exists():
+                        # Try to get status from home's state
+                        state_dir = home_path / "state"
+                        if state_dir.exists():
+                            meta_files = list(state_dir.glob("*.meta"))
+                            records.append({
+                                "name": name,
+                                "home": home,
+                                "active_children": len(meta_files),
+                                "status": "active",
+                            })
+                        else:
+                            records.append({
+                                "name": name,
+                                "home": home,
+                                "active_children": 0,
+                                "status": "idle",
+                            })
+                    else:
+                        records.append({
+                            "name": name,
+                            "home": home,
+                            "status": "unreachable",
+                        })
+        except Exception:
+            pass
+
+        return {
+            "records": records[:20],  # Bounded
+            "total": len(records),
+            "shown": min(len(records), 20),
+            "truncated": len(records) > 20,
+        }
+
+    def _validate_main_inventory(self, tasks: list[dict],
+                                 backlog: dict) -> dict[str, Any]:
+        """Validate main inventory.
+
+        Mirrors firstmate: orphan structured in-flight ids with no state/<id>.meta,
+        and unstructured current backlog rows.
+        """
+        orphans = []
+        for task in tasks:
+            meta_file = self.state_dir / f"{task['id']}.meta"
+            if not meta_file.exists():
+                orphans.append(task['id'])
+
+        unstructured_count = 0
+        if backlog.get("present"):
+            for record in backlog.get("records", []):
+                if not record.get("done") and not record.get("id"):
+                    unstructured_count += 1
+
+        return {
+            "valid": len(orphans) == 0 and unstructured_count == 0,
+            "orphan_in_flight": orphans,
+            "unstructured_current_count": unstructured_count,
+            "reason": "ok" if len(orphans) == 0 and unstructured_count == 0 else "issues_found",
+        }
+
+
+# Need to import re for secondmate parsing
+import re

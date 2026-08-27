@@ -1,7 +1,7 @@
 """lazy-master session - Session management.
 
 Mirrors firstmate fm-session-start.sh: session lock, bootstrap, wake queue,
-fleet-state digest, and context digest.
+fleet-state digest, context digest, and supervision instructions.
 
 Key concepts from firstmate:
 - Per-home session lock acquisition before anything mutates state
@@ -9,7 +9,8 @@ Key concepts from firstmate:
 - Wake queue presentation and acknowledgement
 - Fleet-state digest from *.meta files
 - Context digest from data/*.md files
-- Network checks (deferred)
+- Supervision instructions for detected harness
+- Read-once contract
 """
 
 import os
@@ -32,6 +33,24 @@ class Session:
         self.digest_generated = False
 
 
+# Read-once contract text
+READ_ONCE_CONTRACT = """
+## Read-Once Contract
+
+The digest below is this turn's startup and recovery input.
+Read it once and trust it as this turn's authoritative fleet state.
+
+Do not separately re-read the context, backlog, metadata, or bulk status
+inputs it just printed unless:
+- A source was reported absent or corrupt
+- Older history is specifically needed
+- A targeted workflow must inspect before writing
+
+An ABSENT captain, shared-captain, secondmate, or learnings file means
+the lazy-coding repo's built-in defaults.
+"""
+
+
 class SessionManager:
     """Session management.
 
@@ -41,6 +60,8 @@ class SessionManager:
     - Wake queue presentation
     - Fleet-state digest
     - Context digest
+    - Supervision instructions
+    - Read-once contract
     """
 
     def __init__(self, state_dir: str | None = None, data_dir: str | None = None):
@@ -52,23 +73,17 @@ class SessionManager:
         self.current_session: Session | None = None
 
     def acquire_lock(self, timeout: float = 5.0) -> dict[str, Any]:
-        """Acquire per-home session lock.
-
-        Mirrors firstmate: lock must be acquired before anything mutates state.
-        """
+        """Acquire per-home session lock."""
         if self.lock_file.exists():
-            # Check if lock is stale
             age = time.time() - self.lock_file.stat().st_mtime
-            if age < 3600:  # 1 hour
+            if age < 3600:
                 return {
                     "success": False,
                     "error": "lock_held",
                     "message": "Another session is active. Check state/.session.lock",
                 }
-            # Stale lock, remove it
             self.lock_file.unlink(missing_ok=True)
 
-        # Create lock with PID
         session_id = str(uuid.uuid4())[:8]
         lock_data = {
             "session_id": session_id,
@@ -92,10 +107,7 @@ class SessionManager:
             self.current_session.lock_acquired = False
 
     def bootstrap(self) -> dict[str, Any]:
-        """Run bootstrap checks.
-
-        Mirrors firstmate: detect-only checks for tool/version problems.
-        """
+        """Run bootstrap checks."""
         checks = []
 
         # Check git availability
@@ -142,6 +154,27 @@ class SessionManager:
                 "action": "Install Python",
             })
 
+        # Check worktree tangle
+        try:
+            import subprocess
+            result = subprocess.run(
+                ["git", "rev-parse", "--abbrev-ref", "HEAD"],
+                capture_output=True,
+                text=True,
+                timeout=5,
+            )
+            if result.returncode == 0:
+                branch = result.stdout.strip()
+                if branch != "main":
+                    checks.append({
+                        "check": "worktree_tangle",
+                        "status": "warning",
+                        "branch": branch,
+                        "action": f"You are on branch '{branch}', not 'main'",
+                    })
+        except Exception:
+            pass
+
         return {
             "success": True,
             "checks": checks,
@@ -149,10 +182,7 @@ class SessionManager:
         }
 
     def drain_wakes(self) -> list[dict[str, Any]]:
-        """Drain the wake queue.
-
-        Mirrors firstmate: presents durable wake queue as first work.
-        """
+        """Drain the wake queue."""
         wake_queue = self.state_dir / ".wake-queue"
         if not wake_queue.exists():
             return []
@@ -182,10 +212,7 @@ class SessionManager:
             wake_queue.unlink()
 
     def fleet_digest(self) -> dict[str, Any]:
-        """Generate fleet-state digest.
-
-        Mirrors firstmate: compact backlog listing, *.meta files, status tails.
-        """
+        """Generate fleet-state digest."""
         tasks = []
         for meta_file in self.state_dir.glob("*.meta"):
             if meta_file.is_file():
@@ -204,7 +231,6 @@ class SessionManager:
                 except Exception:
                     pass
 
-        # Read status tails
         for task in tasks:
             status_file = self.state_dir / f"{task['id']}.status"
             if status_file.exists():
@@ -222,10 +248,7 @@ class SessionManager:
         }
 
     def context_digest(self) -> dict[str, Any]:
-        """Generate context digest.
-
-        Mirrors firstmate: full contents of data/*.md files.
-        """
+        """Generate context digest."""
         digest = {}
 
         for md_file in ["projects.md", "secondmates.md", "captain.md",
@@ -238,15 +261,74 @@ class SessionManager:
                 except Exception:
                     digest[md_file] = None
             else:
-                digest[md_file] = None  # ABSENT marker
+                digest[md_file] = None
 
         return digest
 
-    def generate_digest(self) -> dict[str, Any]:
-        """Generate complete session digest.
+    def supervision_instructions(self, harness: str = "claude",
+                                 afk: bool = False,
+                                 x_mode: bool = False,
+                                 queue_pending: bool = False,
+                                 repair_line: bool = False) -> dict[str, Any]:
+        """Generate supervision instructions for detected harness.
 
-        Mirrors firstmate: lock, bootstrap, wake queue, fleet digest, context digest.
+        Mirrors firstmate bin/fm-supervision-instructions.sh.
         """
+        instructions = {
+            "harness": harness,
+            "protocol": self._get_harness_protocol(harness),
+            "afk": afk,
+            "x_mode": x_mode,
+            "queue_pending": queue_pending,
+        }
+
+        if repair_line:
+            instructions["repair"] = self._get_repair_line(harness, afk, x_mode)
+
+        return instructions
+
+    def _get_harness_protocol(self, harness: str) -> str:
+        """Get supervision protocol for harness."""
+        protocols = {
+            "claude": (
+                "For Claude: the watcher runs between turns. "
+                "A fresh beacon with no live watcher is healthy mid-turn. "
+                "Turn-end hooks invoke the turn-end guard."
+            ),
+            "codex": (
+                "For Codex: the watcher runs persistently. "
+                "A live watcher with fresh beacon is required."
+            ),
+            "opencode": (
+                "For OpenCode: the watcher runs persistently. "
+                "A live watcher with fresh beacon is required."
+            ),
+            "pi": (
+                "For Pi: the extension tears down and respawns the watcher "
+                "on every actionable wake. A fresh beacon with unheld lock is healthy "
+                "while the Pi session owns continuity."
+            ),
+            "grok": (
+                "For Grok: the watcher runs persistently. "
+                "A live watcher with fresh beacon is required."
+            ),
+            "cursor": (
+                "For Cursor: the watcher runs persistently. "
+                "A live watcher with fresh beacon is required."
+            ),
+        }
+        return protocols.get(harness, "Unknown harness protocol")
+
+    def _get_repair_line(self, harness: str, afk: bool, x_mode: bool) -> str:
+        """Get repair line for supervision instructions."""
+        if afk:
+            return "Away mode is active. The daemon owns supervision."
+        if x_mode:
+            return "X-mode relay polling needs supervision. Start the watcher."
+        return "Tasks in flight, no live watcher. Start the watcher: lazy-master watcher start"
+
+    def generate_digest(self) -> dict[str, Any]:
+        """Generate complete session digest."""
         if not self.current_session or not self.current_session.lock_acquired:
             return {
                 "success": False,
@@ -266,12 +348,24 @@ class SessionManager:
         # Context digest
         context = self.context_digest()
 
+        # Detect harness
+        harness = "claude"
+
+        # Supervision instructions
+        supervision = self.supervision_instructions(
+            harness=harness,
+            afk=(self.state_dir / ".afk").exists(),
+            queue_pending=bool(wakes),
+        )
+
         self.current_session.digest_generated = True
 
         return {
             "success": True,
             "session_id": self.current_session.id,
             "bootstrap": bootstrap,
+            "read_once_contract": READ_ONCE_CONTRACT,
+            "supervision": supervision,
             "wake_queue": wakes,
             "fleet": fleet,
             "context": context,
