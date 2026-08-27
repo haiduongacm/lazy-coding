@@ -5,7 +5,10 @@ import os
 import tempfile
 from pathlib import Path
 from lazy_gate.gate import Gate, repo_id
-from lazy_gate.pipeline import Pipeline
+from lazy_gate.pipeline import (
+    Pipeline, Executor, StepName, StepStatus, ApprovalAction,
+    Finding, StepOutcome, StepContext, BaseStep, ReviewStep, RunTestStep
+)
 from lazy_gate.worktree import Worktree
 
 
@@ -38,6 +41,40 @@ class TestGate:
             assert status["initialized"] is False
 
 
+class TestFinding:
+    def test_finding_to_dict(self):
+        f = Finding(id="1", file="test.py", line=10, message="error", severity="error")
+        d = f.to_dict()
+        assert d["id"] == "1"
+        assert d["file"] == "test.py"
+        assert d["line"] == 10
+        assert d["severity"] == "error"
+
+
+class TestStepOutcome:
+    def test_outcome_success(self):
+        o = StepOutcome(success=True)
+        assert o.success is True
+        assert o.has_ask_user_findings is False
+
+    def test_outcome_with_findings(self):
+        f = Finding(id="1", file="x.py", line=1, message="err", action="ask-user")
+        o = StepOutcome(findings=[f])
+        assert o.has_ask_user_findings is True
+
+    def test_outcome_to_dict(self):
+        o = StepOutcome(success=True, exit_code=0)
+        d = o.to_dict()
+        assert d["success"] is True
+        assert d["exit_code"] == 0
+
+
+class TestStepContext:
+    def test_context_log(self):
+        ctx = StepContext(work_dir="/tmp", step_name=StepName.TEST, run_id="r1")
+        ctx.log("test message")
+
+
 class TestPipeline:
     def test_init_default(self):
         pipeline = Pipeline()
@@ -62,10 +99,51 @@ class TestPipeline:
         pipeline = Pipeline(stages=[], commands={})
         with tempfile.TemporaryDirectory() as tmpdir:
             result = pipeline.run(tmpdir)
-            # Empty pipeline should succeed (no findings)
+            # Empty pipeline should have no results
+            assert result["results"] == []
+
+    def test_run_with_events(self):
+        events = []
+        pipeline = Pipeline(stages=[], commands={})
+        with tempfile.TemporaryDirectory() as tmpdir:
+            result = pipeline.run(tmpdir, on_event=lambda e: events.append(e))
+            assert len(events) >= 2  # run_started + run_completed
+
+
+class TestExecutor:
+    def test_execute_empty_steps(self):
+        executor = Executor(steps=[])
+        with tempfile.TemporaryDirectory() as tmpdir:
+            result = executor.execute(work_dir=tmpdir, run_id="test-1")
             assert result["success"] is True
-            assert result["findings"] == []
-            assert len(result["results"]) == 0
+            assert result["results"] == []
+
+    def test_execute_skip_steps(self):
+        step = BaseStep(StepName.TEST, commands={"test": ["python", "-c", "print('ok')"]})
+        executor = Executor(steps=[step])
+        with tempfile.TemporaryDirectory() as tmpdir:
+            result = executor.execute(
+                work_dir=tmpdir,
+                run_id="test-2",
+                skip_steps=[StepName.TEST],
+            )
+            assert result["results"][0]["status"] == "skipped"
+
+    def test_execute_success(self):
+        step = BaseStep(StepName.TEST, commands={"test": ["python", "-c", "print('ok')"]})
+        executor = Executor(steps=[step])
+        with tempfile.TemporaryDirectory() as tmpdir:
+            result = executor.execute(work_dir=tmpdir, run_id="test-3")
+            assert result["success"] is True
+            assert result["results"][0]["status"] == "passed"
+
+    def test_execute_failure(self):
+        step = BaseStep(StepName.TEST, commands={"test": ["python", "-c", "import sys; sys.exit(1)"]})
+        executor = Executor(steps=[step])
+        with tempfile.TemporaryDirectory() as tmpdir:
+            result = executor.execute(work_dir=tmpdir, run_id="test-4")
+            assert result["success"] is False
+            assert result["results"][0]["status"] == "failed"
 
 
 class TestWorktree:
