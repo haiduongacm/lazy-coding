@@ -1,56 +1,29 @@
 # lazy-coding
 
-Zero-install AI Coding Agentic Platform.
+Zero-install AI Coding Agentic Platform for AI agents (Claude, OpenCode, etc.)
 
-## Sử dụng (không cần cài đặt)
-
-### Bước 1: Clone
+## Quick Start (for AI Agents)
 
 ```bash
 git clone https://github.com/haiduongacm/lazy-coding.git
 cd lazy-coding
-```
+set PYTHONPATH=lazy_core/src;lazy_pool/src;lazy_gate/src;lazy_master/src
 
-### Bước 2: Set PYTHONPATH
-
-```bash
-# PowerShell
-$env:PYTHONPATH = "lazy_core/src;lazy_pool/src;lazy_gate/src;lazy_master/src"
-
-# Bash
-export PYTHONPATH="lazy_core/src:lazy_pool/src:lazy_gate/src:lazy_master/src"
-```
-
-### Bước 3: Dùng trực tiếp
-
-```bash
-# Lazy-master
-python -m lazy_master.cli dispatch "fix bug"
+# Ready to use
 python -m lazy_master.cli status
-python -m lazy_master.cli guard
-
-# Lazy-gate
-python -m lazy_gate.cli init .
-python -m lazy_gate.cli push
-
-# Lazy-pool
 python -m lazy_pool.cli get
-python -m lazy_pool.cli status
+python -m lazy_gate.cli push
 ```
 
-### Hoặc dùng trong Python
+**No pip install needed. Just clone and run.**
 
-```python
-import sys
-sys.path.insert(0, "lazy_core/src")
-sys.path.insert(0, "lazy_pool/src")
-sys.path.insert(0, "lazy_gate/src")
-sys.path.insert(0, "lazy_master/src")
+## Documentation
 
-from lazy_master import Master
-from lazy_pool import Pool
-from lazy_gate import Gate
-```
+- **[Agent Guide](docs/agent-guide.md)** - How to use in Claude/OpenCode
+- **[Architecture](docs/architecture.md)** - System design
+- **[lazy-master](docs/lazy-master.md)** - Orchestrator API
+- **[lazy-gate](docs/lazy-gate.md)** - Pipeline API
+- **[lazy-pool](docs/lazy-pool.md)** - Worktree pool API
 
 ## Trong Claude
 
