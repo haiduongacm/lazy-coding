@@ -1,22 +1,42 @@
 # lazy-coding
 
-Zero-install AI Coding Agentic Platform.
+Zero-install AI Coding Agentic Platform for AI agents.
 
-## For AI Agents
+## Setup
 
-Clone and source:
+### 1. Clone lazy-coding (one time)
 
 ```bash
-git clone https://github.com/haiduongacm/lazy-coding.git
-source lazy-coding/agent.sh
+git clone https://github.com/haiduongacm/lazy-coding.git D:\lazy-coding
 ```
 
-Then use:
+### 2. In your project, create CLAUDE.md
+
+```markdown
+@D:\lazy-coding\docs\agent-guide.md
+```
+
+### 3. Create .claude/settings.json
+
+```json
+{
+  "hooks": {
+    "SessionStart": [{
+      "hooks": [{
+        "type": "command",
+        "command": "source D:\\lazy-coding\\agent.sh"
+      }]
+    }]
+  }
+}
+```
+
+### 4. Use
 
 ```bash
-python -m lazy_pool.cli get
-python -m lazy_gate.cli push
-python -m lazy_master.cli status
+cd D:\my-app
+claude
+# Tell agent: "Fix login bug"
 ```
 
 ## Docs
