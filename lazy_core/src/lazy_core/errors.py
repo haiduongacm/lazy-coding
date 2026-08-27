@@ -1,6 +1,6 @@
 """AxiError - structured error with code and suggestions.
 
-Mirrors axi-sdk-js errors.ts.
+Mirrors the original error handling logic.
 """
 
 

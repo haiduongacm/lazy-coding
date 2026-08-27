@@ -1,6 +1,6 @@
 """lazy-master - Multi-agent orchestrator.
 
-Mirrors firstmate's AGENTS.md sections 1-14.
+Mirrors lazy-coding's AGENTS.md sections 1-14.
 """
 
 from .master import LazyMaster

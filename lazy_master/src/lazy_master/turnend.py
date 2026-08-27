@@ -1,9 +1,9 @@
 """lazy-master turnend - Turn-end guard.
 
-Mirrors firstmate fm-turnend-guard.sh: push-based guard that prevents
+Mirrors lazy-master's turnend guard: push-based guard that prevents
 blind turn endings when supervision is off.
 
-Key concepts from fm-turnend-guard.sh:
+Key concepts from lazy-master turnend guard:
 - Push-based: verified harness turn-end hooks invoke it every time
 - Loop-guard: never block twice in the same turn
 - Block budget: bounded consecutive blocks per session
@@ -20,7 +20,7 @@ from typing import Any, Optional
 from datetime import datetime
 
 
-# Constants matching fm-turnend-guard.sh
+# Constants matching lazy-master turnend guard
 BLOCK_BUDGET_DEFAULT = 3
 SYNC_WAIT_MS_DEFAULT = 800
 EPOCH_FRESH_DEFAULT = 15
@@ -29,7 +29,7 @@ EPOCH_FRESH_DEFAULT = 15
 class TurnEndGuard:
     """Turn-end guard - prevents blind turn endings.
 
-    Mirrors firstmate fm-turnend-guard.sh:
+    Mirrors lazy-master's turnend guard:
     - Push-based: verified harness turn-end hooks invoke it every time
     - Blocks when tasks in flight but no live watcher holds home lock
     - Claude-mode: cooperates with Stop-owned auto-arm
@@ -61,7 +61,7 @@ class TurnEndGuard:
                      cursor_mode: bool = False) -> dict[str, Any]:
         """Determine if turn should be blocked.
 
-        Mirrors firstmate: block when tasks in flight but no live watcher.
+        Mirrors lazy-master: block when tasks in flight but no live watcher.
         """
         # Cursor mode: render exit 2 as one bounded follow-up
         if cursor_mode:
@@ -101,7 +101,7 @@ class TurnEndGuard:
     def _claude_cooperative_block(self, task_id: str) -> dict[str, Any]:
         """Claude-mode cooperative blocking path.
 
-        Mirrors fm-turnend-guard.sh --claude mode: cooperates with Stop-owned
+        Mirrors lazy-master turnend guard --claude mode: cooperates with Stop-owned
         auto-arm, gives it bounded window to claim recovery.
         """
         # Brief bounded wait for auto-arm to claim
@@ -168,7 +168,7 @@ class TurnEndGuard:
     def _autoarm_owns_recovery(self) -> bool:
         """Check if auto-arm owns recovery.
 
-        Mirrors fm-turnend-guard.sh autoarm_owns_recovery.
+        Mirrors lazy-master turnend guard autoarm_owns_recovery.
         """
         # Check if watcher is healthy
         if self._is_watcher_healthy():
@@ -247,7 +247,7 @@ class TurnEndGuard:
     def _terminal_fail_open(self) -> bool:
         """Check for terminal fail-open condition.
 
-        Mirrors fm-turnend-guard.sh terminal_fail_open: verified one-time
+        Mirrors lazy-master turnend guard terminal_fail_open: verified one-time
         attended fail-open for exhausted budget + verified failure episode.
         """
         # Check if already alarmed

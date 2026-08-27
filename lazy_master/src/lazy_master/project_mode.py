@@ -1,11 +1,11 @@
 """lazy-master project_mode - Project delivery posture.
 
-Mirrors firstmate fm-project-mode.sh: resolve registered delivery posture
+Mirrors lazy-master's project mode: resolve registered delivery posture
 from data/projects.md registry.
 
-Key concepts from firstmate:
+Key concepts from lazy-master:
 - Mode: no-mistakes, direct-PR, local-only
-- Yolo: on (auto-merge green), off (captain approves every merge)
+- Yolo: on (auto-merge green), off (operator approves every merge)
 - Project registry in data/projects.md
 - Present working directory detection
 - Raw output mode
@@ -25,7 +25,7 @@ VALID_MODES = ("no-mistakes", "direct-PR", "local-only", "no-mistakes-prod-only"
 class ProjectMode:
     """Project delivery posture.
 
-    Mirrors firstmate:
+    Mirrors lazy-master:
     - no-mistakes: full pipeline -> PR -> configured merge authority
     - direct-PR: push + PR via gh-axi, no pipeline
     - local-only: local branch, no remote/PR, guarded local merge

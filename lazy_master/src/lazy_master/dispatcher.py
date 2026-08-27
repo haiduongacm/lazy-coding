@@ -1,6 +1,6 @@
 """lazy-master dispatcher - Task parsing and dispatch profiles.
 
-Mirrors firstmate AGENTS.md section 7: task lifecycle and intake.
+Mirrors lazy-coding AGENTS.md section 7: task lifecycle and intake.
 """
 
 import re
@@ -12,7 +12,7 @@ import os
 def parse_request(text: str) -> list[dict[str, Any]]:
     """Parse user request into task list.
 
-    Mirrors firstmate's intake: classify deliverable as ship or scout.
+    Mirrors lazy-master's intake: classify deliverable as ship or scout.
     """
     if not text or not text.strip():
         return [{"description": text, "type": "ship", "priority": "normal"}]
@@ -82,7 +82,7 @@ def resolve_delivery_mode(project_name: str | None = None,
                           project_registry: dict[str, Any] | None = None) -> dict[str, Any]:
     """Resolve delivery mode for a task.
 
-    Mirrors firstmate: resolve every ship task's concrete delivery mode and
+    Mirrors lazy-master: resolve every ship task's concrete delivery mode and
     yolo merge posture at intake.
 
     Returns:
@@ -123,7 +123,7 @@ def resolve_delivery_mode(project_name: str | None = None,
 def resolve_project(text: str, projects: list[str] | None = None) -> str | None:
     """Resolve project from request text.
 
-    Mirrors firstmate: resolve the project independently for every request.
+    Mirrors lazy-master: resolve the project independently for every request.
     An explicit project wins, a clear follow-up inherits its referent.
     """
     if not projects:

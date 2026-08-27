@@ -1,11 +1,11 @@
 """lazy-master master - Orchestrator.
 
-Mirrors firstmate AGENTS.md section 1: identity and prime directives.
+Mirrors lazy-coding AGENTS.md section 1: identity and prime directives.
 Hard rules:
 1. Never write to a project directly.
-2. Never merge a PR without captain's explicit word.
+2. Never merge a PR without operator's explicit word.
 3. Never tear down unlanded work.
-4. Crewmates never address the captain.
+4. Hands never address the operator.
 5. Report outcomes faithfully.
 """
 
@@ -22,8 +22,8 @@ from .dispatcher import parse_request
 class LazyMaster:
     """Multi-agent orchestrator.
 
-    Mirrors firstmate: captain's only point of contact for all software work.
-    Delegates coding, investigation, planning to crewmates or secondmates.
+Mirrors lazy-master: operator's only point of contact for all software work.
+Delegates coding, investigation, planning to hands or lazy-master2s.
     """
 
     agent: str = "claude"
@@ -55,7 +55,7 @@ class LazyMaster:
     async def dispatch(self, task: dict[str, Any]) -> dict[str, Any]:
         """Dispatch a task to a hand.
 
-        Mirrors firstmate AGENTS.md section 7: spawn only through fm-spawn.sh.
+        Mirrors lazy-coding AGENTS.md section 7: spawn only through spawn script.
         """
         if len(self.hands) >= self.max_hands:
             return {
@@ -83,7 +83,7 @@ class LazyMaster:
     async def teardown_all(self) -> list[dict[str, Any]]:
         """Teardown all hands.
 
-        Mirrors firstmate: teardown owns the complete landed-work test.
+        Mirrors lazy-master: teardown owns the complete landed-work test.
         Never force teardown without explicit discard authority.
         """
         results = []

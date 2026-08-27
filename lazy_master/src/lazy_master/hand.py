@@ -1,6 +1,6 @@
 """lazy-master hand - Worker agent representation.
 
-Mirrors firstmate's crewmate concept: a spawned worker in an isolated worktree.
+Mirrors lazy-master's hand concept: a spawned worker in an isolated worktree.
 """
 
 from dataclasses import dataclass, field
@@ -12,8 +12,8 @@ from datetime import datetime
 class LazyHand:
     """Worker agent in an isolated worktree.
 
-    Mirrors firstmate's crewmate: spawned to work on a specific task,
-    never addresses the captain directly, communication flows through master.
+Mirrors lazy-master's hand: spawned to work on a specific task,
+never addresses the operator directly, communication flows through master.
     """
 
     id: str

@@ -1,13 +1,13 @@
 """lazy-master backlog - Task queue management.
 
-Mirrors firstmate AGENTS.md section 10: backlog contract.
+Mirrors lazy-coding AGENTS.md section 10: backlog contract.
 data/backlog.md is the durable queue, tracks work items only, never agents.
 
-Key concepts from firstmate:
+Key concepts from lazy-master:
 - Durable queue with dependencies and time gates
 - File locking for atomic read/write
 - Handoff protocol for cross-home delivery
-- Decision tracking (captain holds)
+- Decision tracking (operator holds)
 - Re-evaluation after teardown and heartbeat
 """
 
@@ -47,7 +47,7 @@ class BacklogItem:
         self.completed: str | None = None
         self.note: str = ""
         self.hold_reason: str | None = None
-        self.hold_kind: str | None = None  # captain, dependency, time
+        self.hold_kind: str | None = None  # operator, dependency, time
 
     def to_dict(self) -> dict[str, Any]:
         """Convert to dict."""
@@ -95,7 +95,7 @@ class BacklogItem:
 class Backlog:
     """Task queue management.
 
-    Mirrors firstmate's backlog contract:
+    Mirrors lazy-master's backlog contract:
     - Tracks work items only, never agents
     - Persistent secondmates never appear as backlog items
     - Update on every dispatch, completion, and decision
@@ -201,9 +201,9 @@ class Backlog:
 
     def hold(self, item_id: str, reason: str, kind: str = "captain",
              until: str | None = None) -> dict[str, Any]:
-        """Hold item for captain decision.
+        """Hold item for operator decision.
 
-        Mirrors firstmate: task held for captain, not closed.
+        Mirrors lazy-master: task held for operator, not closed.
         """
         if item_id not in self.items:
             return {"error": True, "code": "NOT_FOUND", "message": f"Item {item_id} not found"}
@@ -256,7 +256,7 @@ class Backlog:
     def reevaluate(self) -> list[dict[str, Any]]:
         """Re-evaluate queued work after teardown/heartbeat.
 
-        Mirrors firstmate: dispatch items only when dependencies and time gates cleared.
+        Mirrors lazy-master: dispatch items only when dependencies and time gates cleared.
         """
         dispatched = []
         for item in self.items.values():

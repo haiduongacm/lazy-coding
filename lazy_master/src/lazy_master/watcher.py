@@ -1,9 +1,9 @@
 """lazy-master watcher - Zero-token fleet monitoring daemon.
 
-Mirrors firstmate fm-watch.sh: the watcher polls fleet state without
+Mirrors lazy-master's watch script: the watcher polls fleet state without
 consuming tokens, detects stale workers, and triggers wake events.
 
-Key concepts from fm-watch.sh:
+Key concepts from lazy-master watch:
 - Singleton lock to prevent duplicate watchers
 - Poll cycle with configurable interval
 - Heartbeat scans for fleet health
@@ -11,7 +11,7 @@ Key concepts from fm-watch.sh:
 - Stale detection with wedge escalation
 - AFK mode awareness
 - Steering-inbox loss detection
-- Secondmate wake-loop stall detection
+- lazy-master2 wake-loop stall detection
 """
 
 import os
@@ -24,7 +24,7 @@ from typing import Any, Callable, Optional
 from datetime import datetime, timezone
 
 
-# Constants matching fm-watch.sh
+# Constants matching lazy-master watch
 POLL_DEFAULT = 15
 HEARTBEAT_DEFAULT = 600
 HEARTBEAT_MAX = 7200
@@ -42,7 +42,7 @@ EVENT_CAP_FAIL_MAX = 3
 class Watcher:
     """Fleet watcher daemon - monitors worker liveness.
 
-    Mirrors firstmate's watcher: zero-token monitoring, detects stale workers,
+    Mirrors lazy-master's watcher: zero-token monitoring, detects stale workers,
     triggers wake events for the supervision protocol.
     """
 
@@ -190,8 +190,8 @@ class Watcher:
     def scan_signals(self) -> list[dict[str, Any]]:
         """Scan for status/turn-end signal files.
 
-        Mirrors fm-watch.sh signal scanning: checks *.status files for
-        captain-relevant verbs and no-verb signals.
+Mirrors lazy-master watch signal scanning: checks *.status files for
+user-relevant verbs and no-verb signals.
         """
         signals = []
         for meta_file in self.state_dir.glob("*.meta"):
@@ -218,7 +218,7 @@ class Watcher:
                         lines = f.readlines()
                     if lines:
                         last_line = lines[-1].strip()
-                        # Check for captain-relevant verbs
+                        # Check for user-relevant verbs
                         captain_verbs = ["done:", "failed:", "blocked:", "needs-decision:"]
                         is_captain_relevant = any(last_line.startswith(v) for v in captain_verbs)
                         if is_captain_relevant:
@@ -236,7 +236,7 @@ class Watcher:
     def wedge_timer_check(self, window: str) -> dict[str, Any] | None:
         """Check if a stale worker should be escalated.
 
-        Mirrors fm-watch.sh wedge_timer_check: escalation count tracking
+        Mirrors lazy-master watch wedge_timer_check: escalation count tracking
         and demand-deep-inspection at threshold.
         """
         stale_since = self._stale_since.get(window)
@@ -265,7 +265,7 @@ class Watcher:
     def busy_turn_bound_check(self, task_id: str) -> dict[str, Any] | None:
         """Check if a busy pane has exceeded BUSY_TURN_MAX_SECS.
 
-        Mirrors fm-watch.sh busy_turn_bound_check: bounds how long any
+        Mirrors lazy-master watch busy_turn_bound_check: bounds how long any
         busy pane may go with no completed turn.
         """
         turn_ended = self.state_dir / f"{task_id}.turn-ended"
@@ -288,10 +288,10 @@ class Watcher:
         }
 
     def secondmate_wake_stall_tick(self) -> list[dict[str, Any]]:
-        """Check for stalled secondmate wake queues.
+        """Check for stalled lazy-master2 wake queues.
 
-        Mirrors fm-watch.sh secondmate_wake_stall_tick: read-only observation
-        of local secondmate's foreign queue.
+        Mirrors lazy-master watch secondmate_wake_stall_tick: read-only observation
+        of local lazy-master2's foreign queue.
         """
         stalls = []
         for meta_file in self.state_dir.glob("*.meta"):
@@ -342,7 +342,7 @@ class Watcher:
                     "task_id": task_id,
                     "row_seq": oldest[1],
                     "age": age,
-                    "reason": f"secondmate wake-loop stalled: mate={task_id} row={oldest[1]} age={age}s",
+                    "reason": f"lazy-master2 wake-loop stalled: mate={task_id} row={oldest[1]} age={age}s",
                 })
             except Exception:
                 pass
@@ -352,7 +352,7 @@ class Watcher:
     def heartbeat_scan(self) -> list[dict[str, Any]]:
         """Heartbeat scan for fleet health.
 
-        Mirrors fm-watch.sh heartbeat: scans all tasks for captain-relevant
+        Mirrors lazy-master watch heartbeat: scans all tasks for user-relevant
         status that hasn't been surfaced.
         """
         actionable = []
@@ -391,7 +391,7 @@ class Watcher:
     def inbox_steer_check(self, window: str, task_id: str) -> dict[str, Any] | None:
         """Check steering-inbox for unacknowledged instructions.
 
-        Mirrors fm-watch.sh inbox_steer_check: cheap check per window per poll.
+        Mirrors lazy-master watch inbox_steer_check: cheap check per window per poll.
         """
         inbox_dir = self.state_dir / f"{task_id}.inbox"
         if not inbox_dir.exists():
@@ -411,7 +411,7 @@ class Watcher:
             "window": window,
             "task_id": task_id,
             "unhandled_count": len(unhandled),
-            "reason": f"stale: {window} (unread firstmate instruction: {len(unhandled)} unhandled messages)",
+            "reason": f"stale: {window} (unread lazy-master instruction: {len(unhandled)} unhandled messages)",
         }
 
     def on(self, event: str, callback: Callable) -> None:
@@ -440,7 +440,7 @@ class Watcher:
     def _classify_wake(self, wake: dict[str, Any]) -> str:
         """Classify a wake as actionable or benign.
 
-        Mirrors fm-watch.sh wake classification: most wakes during a long
+        Mirrors lazy-master watch wake classification: most wakes during a long
         crew validation are benign and absorbed.
         """
         kind = wake.get("kind", "")
@@ -485,7 +485,7 @@ class Watcher:
         # Scan for signals
         signals = self.scan_signals()
 
-        # Check secondmate stalls
+        # Check lazy-master2 stalls
         stalls = self.secondmate_wake_stall_tick()
 
         # Heartbeat scan (periodic)
@@ -524,7 +524,7 @@ class Watcher:
     def main_loop(self) -> None:
         """Run the main watcher daemon loop.
 
-        Mirrors fm-watch.sh main entry: poll cycle with signal handling.
+        Mirrors lazy-master watch main entry: poll cycle with signal handling.
         """
         if not self.acquire_lock():
             return

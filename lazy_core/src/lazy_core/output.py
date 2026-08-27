@@ -1,6 +1,6 @@
 """output - Structured output rendering.
 
-Mirrors axi-sdk-js output.ts: collapse home directory, error output,
+Mirrors the original output logic: collapse home directory, error output,
 merge output, render output.
 """
 

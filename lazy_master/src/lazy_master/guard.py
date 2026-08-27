@@ -1,10 +1,10 @@
 """lazy-master guard - Watcher liveness and worktree-tangle guard.
 
-Mirrors firstmate fm-guard.sh: called by supervision scripts.
+Mirrors lazy-master's guard: called by supervision scripts.
 Warns if primary checkout is on non-default branch.
 Warns if tasks in flight but supervision is not healthy.
 
-Key concepts from fm-guard.sh:
+Key concepts from lazy-master guard:
 - Pull-based: only warns when some other script runs
 - Worktree-tangle check: primary checkout on non-default branch
 - Watcher liveness check: tasks in flight but no live watcher
@@ -24,7 +24,7 @@ import subprocess
 class Guard:
     """Guard - watcher liveness and worktree-tangle guard.
 
-    Mirrors firstmate fm-guard.sh:
+    Mirrors lazy-master's guard:
     - Always warns if primary checkout is on named non-default branch
     - Warns if tasks in flight but supervision not healthy
     - Episode dedup for stale banner

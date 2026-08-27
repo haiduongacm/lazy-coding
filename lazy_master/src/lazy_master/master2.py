@@ -1,7 +1,7 @@
 """lazy-master2 - Secondmate / persistent agent.
 
-Mirrors firstmate AGENTS.md section 6: secondmate is a crewmate with
-an isolated firstmate home and a charter, not a second architecture.
+Mirrors lazy-coding AGENTS.md section 6: lazy-master2 is a hand with
+an isolated lazy-master home and a charter, not a second architecture.
 """
 
 from dataclasses import dataclass, field
@@ -16,8 +16,8 @@ import uuid
 class LazyMaster2:
     """Persistent agent with charter and scope.
 
-    Mirrors firstmate's secondmate: idle by default, acts only on work
-    routed by the main firstmate.
+    Mirrors lazy-master's lazy-master2: idle by default, acts only on work
+    routed by the main lazy-master.
     """
 
     id: str
@@ -37,7 +37,7 @@ class LazyMaster2:
     async def assign(self, task: dict) -> dict:
         """Assign a task to this secondmate.
 
-        Mirrors firstmate: route by scope, not by clone list.
+        Mirrors lazy-master: route by scope, not by clone list.
         """
         if self.status == "working":
             return {

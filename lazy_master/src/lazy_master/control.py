@@ -1,9 +1,9 @@
 """lazy-master control - Control plane for agent lifecycle.
 
-Mirrors firstmate fm-control.sh: the CONTROL PLANE for a firstmate-owned agent.
+Mirrors lazy-master's control plane: the CONTROL PLANE for a lazy-master-owned agent.
 Allowlisted lifecycle verbs: interrupt, exit, relaunch.
 
-Key concepts from fm-control.sh:
+Key concepts from lazy-master control:
 - Exact task-id resolution with validation
 - Per-task control lock to prevent concurrent lifecycle actions
 - Harness-specific control mechanics via adapters
@@ -57,7 +57,7 @@ EXIT_RETRIES = 3
 class ControlPlane:
     """Control plane for agent lifecycle.
 
-    Mirrors firstmate fm-control.sh:
+    Mirrors lazy-master's control plane:
     - interrupt: deliver harness's verified interrupt sequence
     - exit: stop agent, preserve worktree and uncommitted changes
     - relaunch: transactionally replace running agent with new one
@@ -133,7 +133,7 @@ class ControlPlane:
     def _agent_state(self, backend: str, target: str) -> str:
         """Get agent state from backend.
 
-        Mirrors fm-backend.sh fm_backend_agent_state.
+        Mirrors lazy-master backend agent_state.
         """
         try:
             if backend == "tmux":
@@ -585,7 +585,7 @@ class ControlPlane:
     def rollback_relaunch(self, task_id: str, phase: str) -> dict[str, Any]:
         """Rollback a failed relaunch.
 
-        Mirrors fm-control.sh relaunch_rollback.
+        Mirrors lazy-master control relaunch_rollback.
         """
         journal = self.state_dir / f"{task_id}.control-relaunch"
         if not journal.exists():

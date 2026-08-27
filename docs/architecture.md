@@ -3,10 +3,10 @@
 ## Overview
 
 lazy-coding is an AI Coding Agentic Platform built in Python, faithfully inheriting logic from:
-- **axi-sdk-js**: TOON format, error handling
-- **no-mistakes**: Worktree pool, gate pipeline
-- **firstmate**: Multi-agent orchestration, watcher, control plane
-- **superpowers**: TDD skill
+- **axi-sdk-js** (original): TOON format, error handling
+- **no-mistakes** (original): Worktree pool, gate pipeline
+- **firstmate** (original): Multi-agent orchestration, watcher, control plane
+- **superpowers** (original): TDD skill
 
 ## Packages
 
@@ -109,9 +109,9 @@ class StepOutcome:
 
 | Repo | What we inherit | lazy-coding module |
 |------|-----------------|-------------------|
-| `axi-sdk-js` | TOON format, errors, output | `lazy_core` |
-| `no-mistakes` | Worktree pool, gate pipeline | `lazy_pool`, `lazy_gate` |
-| `firstmate` | Watcher, control, session, guard | `lazy_master` |
+| `axi-sdk-js` (original) | TOON format, errors, output | `lazy_core` |
+| `no-mistakes` (original) | Worktree pool, gate pipeline | `lazy_pool`, `lazy_gate` |
+| `firstmate` (original) | Watcher, control, session, guard | `lazy_master` |
 | `superpowers` | TDD skill | AGENTS.md |
 | `lavish-axi` | Fleet sync | `lazy_master` |
 | `treehouse` | TOON extensions | `lazy_core` |

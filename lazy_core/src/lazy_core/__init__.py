@@ -1,6 +1,6 @@
 """lazy-core - TOON format encoder/decoder and shared utilities.
 
-Mirrors the axi-sdk-js output.ts and errors.ts logic.
+Mirrors the original output and error handling logic.
 """
 
 from .toon import encode, decode, encode_dict, encode_list, decode_dict, decode_list, decode_scalar

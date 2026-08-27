@@ -1,9 +1,9 @@
 """lazy-master session - Session management.
 
-Mirrors firstmate fm-session-start.sh: session lock, bootstrap, wake queue,
+Mirrors lazy-master's session start: session lock, bootstrap, wake queue,
 fleet-state digest, context digest, and supervision instructions.
 
-Key concepts from firstmate:
+Key concepts from lazy-master:
 - Per-home session lock acquisition before anything mutates state
 - Bootstrap checks (tool/version, worktree-tangle, harness override)
 - Wake queue presentation and acknowledgement
@@ -46,7 +46,7 @@ inputs it just printed unless:
 - Older history is specifically needed
 - A targeted workflow must inspect before writing
 
-An ABSENT captain, shared-captain, secondmate, or learnings file means
+An ABSENT operator, shared-operator, lazy-master2, or learnings file means
 the lazy-coding repo's built-in defaults.
 """
 
@@ -54,7 +54,7 @@ the lazy-coding repo's built-in defaults.
 class SessionManager:
     """Session management.
 
-    Mirrors firstmate fm-session-start.sh:
+    Mirrors lazy-master's session start:
     - Acquires per-home session lock first
     - Bootstrap checks
     - Wake queue presentation
@@ -272,7 +272,7 @@ class SessionManager:
                                  repair_line: bool = False) -> dict[str, Any]:
         """Generate supervision instructions for detected harness.
 
-        Mirrors firstmate bin/fm-supervision-instructions.sh.
+        Mirrors lazy-master bin/supervision-instructions.sh.
         """
         instructions = {
             "harness": harness,

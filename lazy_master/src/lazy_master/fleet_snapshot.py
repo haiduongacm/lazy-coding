@@ -1,9 +1,9 @@
 """lazy-master fleet_snapshot - Read-only structured fleet snapshot.
 
-Mirrors firstmate fm-fleet-snapshot.sh: read-only structured snapshot
-of the firstmate fleet.
+Mirrors lazy-master's fleet snapshot: read-only structured snapshot
+of the lazy-master fleet.
 
-Key concepts from firstmate:
+Key concepts from lazy-master:
 - Schema versioning for stable output
 - Tasks from state/<id>.meta files
 - Backlog from data/backlog.md
@@ -24,7 +24,7 @@ import subprocess
 class FleetSnapshot:
     """Read-only structured fleet snapshot.
 
-    Mirrors firstmate fm-fleet-snapshot.sh:
+    Mirrors lazy-master's fleet snapshot:
     - schema: stable schema id
     - generated: UTC observation time
     - tasks[]: one row per state/<id>.meta
@@ -218,9 +218,9 @@ class FleetSnapshot:
         return projects
 
     def _collect_secondmates(self) -> dict[str, Any]:
-        """Collect secondmate summaries.
+        """Collect lazy-master2 summaries.
 
-        Mirrors firstmate: bounded current summaries for registered secondmates.
+        Mirrors lazy-master: bounded current summaries for registered lazy-master2s.
         """
         records = []
         secondmates_file = self.data_dir / "secondmates.md"
@@ -237,7 +237,7 @@ class FleetSnapshot:
             with open(secondmates_file, "r") as f:
                 content = f.read()
 
-            # Parse secondmate entries
+            # Parse lazy-master2 entries
             for line in content.split("\n"):
                 line = line.strip()
                 if not line or line.startswith("#"):
@@ -288,7 +288,7 @@ class FleetSnapshot:
                                  backlog: dict) -> dict[str, Any]:
         """Validate main inventory.
 
-        Mirrors firstmate: orphan structured in-flight ids with no state/<id>.meta,
+        Mirrors lazy-master: orphan structured in-flight ids with no state/<id>.meta,
         and unstructured current backlog rows.
         """
         orphans = []
@@ -311,5 +311,5 @@ class FleetSnapshot:
         }
 
 
-# Need to import re for secondmate parsing
+# Need to import re for lazy-master2 parsing
 import re
