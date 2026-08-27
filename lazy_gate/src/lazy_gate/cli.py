@@ -1,34 +1,79 @@
-"""lazy-gate CLI."""
+"""lazy-gate CLI entry point."""
 
+import argparse
 import sys
-import json
-from .gate import Gate
 
 
 def main():
-    """Main CLI entry point."""
-    args = sys.argv[1:]
+    parser = argparse.ArgumentParser(
+        prog="lazy-gate",
+        description="Git gate + pipeline validation",
+    )
+    subparsers = parser.add_subparsers(dest="command", help="Command to run")
 
-    if not args or args[0] == "help":
-        show_help()
-        return
+    # init
+    init_parser = subparsers.add_parser("init", help="Initialize gate")
+    init_parser.add_argument("path", nargs="?", default=".", help="Repository path")
 
-    gate = Gate()
+    # push
+    push_parser = subparsers.add_parser("push", help="Push through gate")
+    push_parser.add_argument("branch", nargs="?", help="Branch to push")
+    push_parser.add_argument("--path", default=".", help="Repository path")
 
-    if args[0] == "push":
-        branch = args[1] if len(args) > 1 else None
-        result = gate.push(branch)
-        print(json.dumps(result, indent=2))
-    else:
-        print(f"Unknown command: {args[0]}", file=sys.stderr)
+    # status
+    status_parser = subparsers.add_parser("status", help="Show gate status")
+    status_parser.add_argument("--path", default=".", help="Repository path")
+
+    # eject
+    eject_parser = subparsers.add_parser("eject", help="Remove gate")
+    eject_parser.add_argument("--path", default=".", help="Repository path")
+
+    # pipeline
+    pipeline_parser = subparsers.add_parser("pipeline", help="Run pipeline")
+    pipeline_parser.add_argument("--path", default=".", help="Repository path")
+    pipeline_parser.add_argument("--branch", help="Branch to validate")
+    pipeline_parser.add_argument("--stages", nargs="+", default=["review", "test", "lint"], help="Stages to run")
+
+    args = parser.parse_args()
+
+    if not args.command:
+        parser.print_help()
         sys.exit(1)
 
+    from lazy_gate.gate import Gate
+    from lazy_gate.pipeline import Pipeline
 
-def show_help():
-    print("""
-lazy-gate - Git gate + pipeline validation
+    if args.command == "init":
+        gate = Gate(args.path)
+        result = gate.init()
+        if result:
+            print("Gate initialized")
+        else:
+            print("Gate already initialized")
 
-Usage:
-  lazy-gate push [branch]   Push through gate
-  lazy-gate help            Show this help
-""")
+    elif args.command == "push":
+        gate = Gate(args.path)
+        result = gate.push(branch=args.branch)
+        import json
+        print(json.dumps(result, indent=2))
+
+    elif args.command == "status":
+        gate = Gate(args.path)
+        status = gate.status()
+        import json
+        print(json.dumps(status, indent=2))
+
+    elif args.command == "eject":
+        gate = Gate(args.path)
+        result = gate.eject()
+        print("Gate ejected")
+
+    elif args.command == "pipeline":
+        pipeline = Pipeline(stages=args.stages)
+        result = pipeline.run(args.path, branch=args.branch)
+        import json
+        print(json.dumps(result, indent=2))
+
+
+if __name__ == "__main__":
+    main()
