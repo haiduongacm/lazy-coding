@@ -1,80 +1,89 @@
 # Agent Guide
 
-How to use lazy-coding in AI agents (Claude, OpenCode, etc.)
+How AI agents (Claude, OpenCode) should use lazy-coding.
 
-## Setup
+## Agent Instructions
 
-No installation needed. Just set the environment:
+When you receive a coding task, follow this workflow:
+
+### 1. Set environment
 
 ```bash
 source D:\lazy-coding\agent.sh
 ```
 
-Or manually:
+### 2. Get worktree
 
 ```bash
-export PYTHONPATH="D:/lazy-coding/lazy_core/src:D:/lazy-coding/lazy_pool/src:D:/lazy-coding/lazy_gate/src:D:/lazy-coding/lazy_master/src"
-```
-
-## Usage
-
-```bash
-# Pool
 python -m lazy_pool.cli get
-python -m lazy_pool.cli return <path>
-python -m lazy_pool.cli status
-
-# Gate
-python -m lazy_gate.cli push
-python -m lazy_gate.cli status
-
-# Master
-python -m lazy_master.cli status
-python -m lazy_master.cli guard
-python -m lazy_master.cli dispatch "fix bug"
 ```
 
-## Agent Workflow
+Returns worktree path. Work in that directory.
 
-When user requests a task:
-
-```
-User: "Fix login bug"
-
-Agent:
-  1. source D:\lazy-coding\agent.sh
-  2. python -m lazy_pool.cli get
-  3. Write test (RED)
-  4. Implement (GREEN)
-  5. python -m lazy_gate.cli push
-  6. python -m lazy_pool.cli return
-```
-
-## Configuration
-
-Add to Claude settings (`.claude/settings.json`):
-
-```json
-{
-  "permissions": {
-    "allow": [
-      "bash(source D:\\lazy-coding\\agent.sh)",
-      "bash(python -m lazy_*)"
-    ]
-  }
-}
-```
-
-## Python API
+### 3. Write test first (RED)
 
 ```python
-import sys
-sys.path.insert(0, "D:/lazy-coding/lazy_core/src")
-sys.path.insert(0, "D:/lazy-coding/lazy_pool/src")
-sys.path.insert(0, "D:/lazy-coding/lazy_gate/src")
-sys.path.insert(0, "D:/lazy-coding/lazy_master/src")
-
-from lazy_pool.pool import Pool
-from lazy_gate.gate import Gate
-from lazy_master.watcher import Watcher
+def test_feature():
+    result = feature()
+    assert result == expected
 ```
+
+Run test - expect failure.
+
+### 4. Implement (GREEN)
+
+Write minimal code to pass the test.
+
+### 5. Push through gate
+
+```bash
+python -m lazy_gate.cli push
+```
+
+### 6. Return worktree
+
+```bash
+python -m lazy_pool.cli return <worktree-path>
+```
+
+## Available Commands
+
+### Pool (worktree management)
+
+```bash
+python -m lazy_pool.cli get              # Get a worktree
+python -m lazy_pool.cli return <path>    # Return a worktree
+python -m lazy_pool.cli status           # Pool status
+```
+
+### Gate (validation pipeline)
+
+```bash
+python -m lazy_gate.cli push             # Push through gate
+python -m lazy_gate.cli status           # Gate status
+python -m lazy_gate.cli pipeline         # Run validation
+```
+
+### Master (orchestration)
+
+```bash
+python -m lazy_master.cli status         # Fleet status
+python -m lazy_master.cli guard          # Health checks
+python -m lazy_master.cli snapshot       # Full status
+python -m lazy_master.cli control <id> interrupt   # Control task
+```
+
+### Backlog
+
+```bash
+python -m lazy_master.cli backlog add "task description"
+python -m lazy_master.cli backlog list
+python -m lazy_master.cli backlog ready
+```
+
+## Rules
+
+1. Always use TDD - write test before code
+2. Always use worktrees - never modify files directly
+3. Always push through gate - never push directly
+4. Return worktree when done
