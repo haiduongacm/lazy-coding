@@ -1,165 +1,70 @@
 # lazy-coding
 
-AI Coding Agentic Platform - Zero-install, token-efficient, agent-native
+Zero-install AI Coding Agentic Platform.
 
-## Features
+## Sử dụng (không cần cài đặt)
 
-| Package | Lines | Parity | Description |
-|---------|-------|--------|-------------|
-| **lazy-core** | 174 | 100% | TOON format encoder/decoder, AXI principles |
-| **lazy-pool** | 438 | 82% | Git worktree pool manager |
-| **lazy-gate** | 1,108 | 75% | Git gate + pipeline validation |
-| **lazy-master** | 3,000+ | 85% | Multi-agent orchestrator |
-| **lazy-view** | - | - | HTML artifact review tool |
-
-## Installation
+### Bước 1: Clone
 
 ```bash
-# Install with uv (recommended)
-uv pip install -e lazy_core -e lazy_pool -e lazy_gate -e lazy_master -e lazy_view
-
-# Or install with pip
-pip install -e lazy_core -e lazy_pool -e lazy_gate -e lazy_master -e lazy_view
+git clone https://github.com/haiduongacm/lazy-coding.git
+cd lazy-coding
 ```
 
-## Quick Start
+### Bước 2: Set PYTHONPATH
 
 ```bash
-# Pool management
-lazy-pool get              # Get a worktree
-lazy-pool return           # Return a worktree
-lazy-pool status           # Show pool status
+# PowerShell
+$env:PYTHONPATH = "lazy_core/src;lazy_pool/src;lazy_gate/src;lazy_master/src"
 
-# Gate validation
-lazy-gate push             # Push through gate
-
-# Multi-agent orchestration
-lazy-master dispatch "fix bug"
-lazy-master status
-lazy-master control <handId> interrupt
-
-# HTML review
-lazy-view open index.html
+# Bash
+export PYTHONPATH="lazy_core/src:lazy_pool/src:lazy_gate/src:lazy_master/src"
 ```
 
-## TOON Format
-
-TOON (Token-Optimized Object Notation) uses ~40% fewer tokens than JSON.
+### Bước 3: Dùng trực tiếp
 
 ```bash
-# Encode JSON to TOON
-echo '{"name":"test","items":[1,2,3]}' | lazy-core encode
+# Lazy-master
+python -m lazy_master.cli dispatch "fix bug"
+python -m lazy_master.cli status
+python -m lazy_master.cli guard
 
-# Decode TOON to JSON
-echo "name: test
-items[3]:
-  1
-  2
-  3" | lazy-core decode
+# Lazy-gate
+python -m lazy_gate.cli init .
+python -m lazy_gate.cli push
+
+# Lazy-pool
+python -m lazy_pool.cli get
+python -m lazy_pool.cli status
 ```
 
-## Architecture
+### Hoặc dùng trong Python
 
-```
-┌─────────────────────────────────────────────────────────┐
-│                    lazy-master                           │
-├─────────────────────────────────────────────────────────┤
-│  dispatch() → lazy-hand → tmux backend → agent          │
-│       │              ↑                                   │
-│  watcher() ─────────┘  (daemon loop, signal scan)       │
-│  control() ──────────── (interrupt/exit/relaunch)       │
-│  guard() ────────────── (health checks)                 │
-│  snapshot() ─────────── (fleet status)                  │
-│  session() ──────────── (bootstrap, lock)               │
-│  backlog() ──────────── (task queue)                    │
-└─────────────────────────────────────────────────────────┘
-         ↓
-┌─────────────────────────────────────────────────────────┐
-│                    lazy-gate                             │
-├─────────────────────────────────────────────────────────┤
-│  Pipeline: review → test → lint → document → push → PR  │
-│  Executor: step-based, approval gates, fix-loop         │
-│  Gate: init, eject, push, status                        │
-└─────────────────────────────────────────────────────────┘
-         ↓
-┌─────────────────────────────────────────────────────────┐
-│                    lazy-pool                             │
-├─────────────────────────────────────────────────────────┤
-│  Layout: canonical, contains, placement                 │
-│  Pool: get, return, prune                               │
-│  State: atomic write, lock, placement                   │
-└─────────────────────────────────────────────────────────┘
-         ↓
-┌─────────────────────────────────────────────────────────┐
-│                    lazy-core                             │
-├─────────────────────────────────────────────────────────┤
-│  TOON: encode/decode (40% fewer tokens)                 │
-│  Errors: AxiError, exit codes                           │
-│  Output: collapse home, render                          │
-│  Principles: 10 AXI design rules                       │
-└─────────────────────────────────────────────────────────┘
+```python
+import sys
+sys.path.insert(0, "lazy_core/src")
+sys.path.insert(0, "lazy_pool/src")
+sys.path.insert(0, "lazy_gate/src")
+sys.path.insert(0, "lazy_master/src")
+
+from lazy_master import Master
+from lazy_pool import Pool
+from lazy_gate import Gate
 ```
 
-## Commands
+## Trong Claude
 
-```bash
-# Dispatch
-lazy-master dispatch "fix login bug"
-lazy-master dispatch --backend tmux --agent claude "fix bug"
+Khi bạn yêu cầu Claude làm task:
 
-# Status
-lazy-master status
-lazy-master liveness
-lazy-master busy
-lazy-master snapshot
+```
+Bạn: "Fix login bug"
 
-# Control
-lazy-master control <handId> interrupt
-lazy-master control <handId> exit
-lazy-master control <handId> relaunch
-
-# Guard
-lazy-master guard
-
-# Secondmate
-lazy-master secondmate add --name backend-team --agent claude
-lazy-master secondmate list
-
-# Backlog
-lazy-master backlog add "Fix login bug"
-lazy-master backlog list
-lazy-master backlog ready
-
-# Project modes
-lazy-master project set my-api no-mistakes
-lazy-master project set my-scripts local-only --yolo
-
-# Operational memory
-lazy-master stow "Login uses JWT tokens"
-lazy-master memory
-
-# Fleet sync
-lazy-master sync
-lazy-master sync --project ~/projects/api
-lazy-master sync history
+Claude:
+  1. cd D:\lazy-coding
+  2. python -m lazy_pool.cli get
+  3. Viết test, code trong worktree
+  4. python -m lazy_gate.cli push
+  5. python -m lazy_pool.cli return
 ```
 
-## Development
-
-```bash
-# Run tests
-pytest
-
-# Run with coverage
-pytest --cov=lazy_core --cov=lazy_pool --cov=lazy_gate --cov=lazy_master
-
-# Lint
-ruff check .
-
-# Type check
-mypy .
-```
-
-## License
-
-MIT
+Không cần cài đặt. Không cần pip. Chỉ cần clone và chạy.
